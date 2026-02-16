@@ -1,5 +1,3 @@
-# Create and open app.py for editing
-cat > app.py << 'EOF'
 from flask import Flask, render_template, redirect, url_for
 import os
 from dotenv import load_dotenv
@@ -28,4 +26,3 @@ def tax_bot():
 if __name__ == '__main__':
     print("🚀 Tax Advisor Skeleton - Phase 1")
     app.run(debug=True, port=5000)
-EOF

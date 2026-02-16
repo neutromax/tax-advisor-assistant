@@ -1,0 +1,22 @@
+/* Tax bot styles - Phase 1 */
+.chat-container {
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 5px;
+    background: white;
+}
+
+.message {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.bot-message {
+    background: #e3f2fd;
+}
+
+.user-message {
+    background: #c8e6c9;
+    text-align: right;
+}
