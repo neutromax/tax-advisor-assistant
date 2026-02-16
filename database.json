@@ -1,0 +1,74 @@
+{
+  "users": {
+    "bhavithnanilkar6@gmail.com": {
+      "email": "bhavithnanilkar6@gmail.com",
+      "password": "123456",
+      "name": "bhavith",
+      "created_at": "2025-10-29T00:28:50.755332"
+    }
+  },
+  "payslips": {
+    "bhavithnanilkar6@gmail.com": [
+      {
+        "id": "bhavithnanilkar6@gmail.com_1761700634.699297",
+        "user_email": "bhavithnanilkar6@gmail.com",
+        "filename": "WhatsApp Image 2025-10-29 at 02.21.36_8192aeb1.jpg",
+        "extracted_data": {
+          "name": "Gaurav",
+          "income": 82250.0,
+          "employer": "Zylker",
+          "date": "29/03/2024",
+          "payPeriod": "March 2024",
+          "deductions": 5250.0,
+          "netPay": 77000.0
+        },
+        "uploaded_at": "2025-10-29T06:47:14.699316"
+      },
+      {
+        "id": "bhavithnanilkar6@gmail.com_1763609585.884754",
+        "user_email": "bhavithnanilkar6@gmail.com",
+        "filename": "WhatsApp Image 2025-10-29 at 02.21.36_8192aeb1.jpg",
+        "extracted_data": {
+          "name": "Gaurav",
+          "income": 82250.0,
+          "employer": "Zylker",
+          "date": "29/03/2024",
+          "payPeriod": "March 2024",
+          "deductions": 5250.0,
+          "netPay": 77000.0
+        },
+        "uploaded_at": "2025-11-20T09:03:05.884777"
+      }
+    ]
+  },
+  "tax_profiles": {
+    "bhavithnanilkar6@gmail.com": {
+      "user_email": "bhavithnanilkar6@gmail.com",
+      "total_income": 82250.0,
+      "deductions": {
+        "80C": 6185.0,
+        "standard_deduction": 50000
+      },
+      "tax_calculated": true,
+      "final_tax_payable": 0,
+      "taxable_income": 190565.0,
+      "total_deductions": 56185.0,
+      "created_at": "2025-10-29T04:12:28.612051",
+      "updated_at": "2025-11-20T09:03:05.941600"
+    }
+  },
+  "tax_documents": {
+    "bhavithnanilkar6@gmail.com": [
+      {
+        "id": "bhavithnanilkar6@gmail.com_80C_1761692315.63718",
+        "user_email": "bhavithnanilkar6@gmail.com",
+        "document_type": "80C",
+        "filename": "WhatsApp Image 2025-10-28 at 23.53.18_ce4df767.jpg",
+        "verified": true,
+        "amount": 6185.0,
+        "uploaded_at": "2025-10-29T04:28:35.637203"
+      }
+    ]
+  },
+  "tax_sessions": {}
+}

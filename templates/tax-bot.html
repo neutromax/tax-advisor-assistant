@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Advisor - Payslip Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tax_bot.css') }}">
+</head>
+<body class="dashboard-page">
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left">
+                <svg class="logo-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <h2>Tax Advisor Bot</h2>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <span class="user-name">{{ user_name }}</span>
+                    <a href="/dashboard" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="container">
+            <div class="content-wrapper">
+                <!-- Chat Interface -->
+                <section class="chat-section">
+                    <div class="glass-card">
+                        <h3>Tax Advisory Assistant</h3>
+                        <p class="section-description">Get personalized tax advice and calculate your tax liability</p>
+                        
+                        <div class="chat-container">
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="message bot-message">
+                                    <div class="message-avatar">🤖</div>
+                                    <div class="message-content">
+                                        <p>Hello! I'm your tax advisor bot. I'll help you calculate your tax liability and maximize your deductions under Indian tax laws.</p>
+                                        <p>Let's start by analyzing your income from uploaded payslips.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-container">
+                                <div class="quick-actions" id="quickActions">
+                                    <button class="quick-action-btn" data-action="analyze_income">Analyze My Income</button>
+                                    <button class="quick-action-btn" data-action="section_80c">Section 80C Deductions</button>
+                                    <button class="quick-action-btn" data-action="calculate_tax">Calculate Final Tax</button>
+                                </div>
+                                
+                                <div class="document-upload" id="documentUpload" style="display: none;">
+                                    <h4>Upload Document for Verification</h4>
+                                    <div class="upload-area-small" id="docUploadArea">
+                                        <input type="file" id="docFileInput" accept="image/*" style="display: none;">
+                                        <div class="upload-placeholder-small" id="docUploadPlaceholder">
+                                            <svg class="upload-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="17 8 12 3 7 8"></polyline>
+                                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                                            </svg>
+                                            <p>Upload investment proof</p>
+                                        </div>
+                                        <div class="image-preview-small" id="docImagePreview" style="display: none;">
+                                            <img id="docPreviewImage" src="" alt="Preview">
+                                            <button class="btn-remove-small" id="removeDocImageBtn">✕</button>
+                                        </div>
+                                    </div>
+                                    <button id="verifyDocBtn" class="btn btn-primary" style="display: none; margin-top: 10px;">
+                                        <span class="btn-text">Verify Document</span>
+                                        <div class="btn-loader" style="display: none;"></div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tax Summary -->
+                <section class="tax-summary-section">
+                    <div class="glass-card">
+                        <h3>Your Tax Summary</h3>
+                        
+                        <div class="tax-summary" id="taxSummary">
+                            <div class="empty-state">
+                                <div class="empty-icon">📊</div>
+                                <p>Complete the tax assessment to see your summary</p>
+                            </div>
+                        </div>
+
+                        <div class="deductions-breakdown" id="deductionsBreakdown" style="display: none;">
+                            <h4>Deductions Breakdown</h4>
+                            <div class="deductions-list" id="deductionsList">
+                                <!-- Deductions will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Uploaded Documents -->
+            <section class="documents-section" id="documentsSection" style="display: none;">
+                <div class="glass-card">
+                    <h3>Verified Documents</h3>
+                    <div class="documents-list" id="documentsList">
+                        <!-- Documents will be populated here -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/tax_bot.js') }}"></script>
+</body>
+</html>

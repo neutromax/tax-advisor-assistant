@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Payslip Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dashboard-page">
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="header-left">
+                <svg class="logo-icon-small" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <h2>Payslip Analyzer</h2>
+            </div>
+            <div class="header-right">
+                <div class="api-status">
+                    <span id="apiStatusIndicator" class="status-dot status-checking"></span>
+                    <span id="apiStatusText">Checking API...</span>
+                </div>
+                <div class="user-info">
+                    <span class="user-name">{{ user_name }}</span>
+                    <!-- ADD THIS LINE FOR TAX ADVISOR LINK -->
+                    <a href="/tax-bot" class="btn btn-secondary btn-sm">Tax Advisor</a>
+                    <button id="logoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+        <div class="container">
+            <!-- Main Content Area -->
+            <div class="content-wrapper">
+                <!-- Results Section - Now on LEFT -->
+                <section class="results-section" id="resultsSection" style="display: none;">
+                    <div class="glass-card">
+                        <div class="section-header">
+                            <h3>Extracted Data</h3>
+                            <button id="saveEditsBtn" class="btn btn-primary btn-sm" style="display: none;">
+                                <span class="btn-text">Save Changes</span>
+                                <div class="btn-loader" style="display: none;"></div>
+                            </button>
+                        </div>
+                        <div class="results-grid" id="resultsGrid">
+                            <!-- Results will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Upload Section - Now on RIGHT -->
+                <section class="upload-section">
+                    <div class="glass-card">
+                        <h3>Upload Payslip or Bank Statement</h3>
+                        <p class="section-description">Upload a clear image of your payslip or bank statement for AI-powered data extraction</p>
+                        
+                        <div class="upload-area" id="uploadArea">
+                            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <div class="upload-placeholder" id="uploadPlaceholder">
+                                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p>Click to upload or drag and drop</p>
+                                <p class="upload-hint">JPG, PNG, or PDF (Max 5MB)</p>
+                            </div>
+                            <div class="image-preview" id="imagePreview" style="display: none;">
+                                <img id="previewImage" src="" alt="Preview">
+                                <button class="btn-remove" id="removeImageBtn">✕</button>
+                            </div>
+                        </div>
+
+                        <button id="analyzeBtn" class="btn btn-primary btn-lg" style="display: none;">
+                            <span class="btn-text">Analyze Document</span>
+                            <div class="btn-loader" style="display: none;"></div>
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- History Section -->
+            <section class="history-section" id="historySection" style="display: none;">
+                <div class="glass-card">
+                    <div class="section-header">
+                        <h3>Upload History</h3>
+                        <button id="clearHistoryBtn" class="btn btn-secondary btn-sm">Clear All</button>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <!-- History will be populated by JavaScript -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
