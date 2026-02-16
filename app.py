@@ -215,6 +215,14 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/dev-login')
+def dev_login():
+    # Automatically log in as a test user
+    session['user_email'] = 'dev@test.com'
+    session['user_name'] = 'Developer'
+    session.permanent = True
+    return redirect(url_for('dashboard'))
+
 if __name__ == '__main__':
     print("🚀 Tax Advisor - Phase 2.5 with Google Login (FIXED)")
     port = int(os.environ.get('PORT', 5000))
