@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - Tax Advisor</title>
+    <title>Sign Up - Tax Advisor</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -42,20 +42,6 @@
         button:hover {
             background: #764ba2;
         }
-        .google-btn {
-            background: #4285f4;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .google-btn:hover {
-            background: #3367d6;
-        }
-        .google-btn img {
-            width: 20px;
-            height: 20px;
-        }
         .error {
             color: red;
             margin: 10px 0;
@@ -63,26 +49,11 @@
             background: #ffebee;
             border-radius: 5px;
         }
-        .divider {
-            text-align: center;
-            margin: 20px 0;
-            color: #999;
-            position: relative;
-        }
-        .divider::before,
-        .divider::after {
-            content: "";
-            position: absolute;
-            top: 50%;
-            width: 45%;
-            height: 1px;
-            background: #ddd;
-        }
-        .divider::before {
-            left: 0;
-        }
-        .divider::after {
-            right: 0;
+        .hint {
+            color: gray;
+            font-size: 0.9em;
+            margin-top: -5px;
+            margin-bottom: 10px;
         }
         .links {
             text-align: center;
@@ -100,38 +71,32 @@
 <body>
     <div class="container">
         <h1>Tax Advisor App</h1>
-        <h2>Login</h2>
+        <h2>Create Account</h2>
         
         {% if error %}
         <div class="error">{{ error }}</div>
         {% endif %}
         
-        <!-- Google Login Button -->
-        <a href="/google-login" style="text-decoration: none;">
-            <button class="google-btn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google">
-                Sign in with Google
-            </button>
-        </a>
-        
-        <div class="divider">OR</div>
-        
-        <!-- Regular Login Form -->
-        <form method="POST" action="/login">
+        <form method="POST" action="/signup">
+            <div>
+                <label>Full Name:</label>
+                <input type="text" name="name" required placeholder="John Doe">
+            </div>
             <div>
                 <label>Email:</label>
                 <input type="email" name="email" required placeholder="your@email.com">
             </div>
             <div>
                 <label>Password:</label>
-                <input type="password" name="password" required placeholder="••••••">
+                <input type="password" name="password" required 
+                       minlength="6" placeholder="••••••">
+                <div class="hint">Minimum 6 characters</div>
             </div>
-            <button type="submit">Login with Email</button>
+            <button type="submit">Sign Up</button>
         </form>
         
         <div class="links">
-            <p>Don't have an account? <a href="/signup">Sign up here</a></p>
-            <p><a href="/dashboard">Skip to Dashboard (temp)</a></p>
+            <p>Already have an account? <a href="/login">Login here</a></p>
         </div>
     </div>
 </body>

@@ -1,0 +1,17 @@
+{
+  "users": {
+    "4al23cd015@aiet.org.in": {
+      "email": "4al23cd015@aiet.org.in",
+      "password": "13910b7994efc4b7:a27d179a539f33244fe7fb6998558168d498b90644ea83aacac91ada9b4e9344",
+      "name": "bhavi",
+      "created_at": "2026-02-16T09:17:43.004235"
+    },
+    "bhavithnanilkar6@gmail.com": {
+      "email": "bhavithnanilkar6@gmail.com",
+      "password": "GOOGLE_AUTH_USER",
+      "name": "Bhavith Nanilkar",
+      "created_at": "2026-02-16T10:17:55.041631",
+      "auth_type": "google"
+    }
+  }
+}

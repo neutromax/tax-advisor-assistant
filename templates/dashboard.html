@@ -2,22 +2,78 @@
 <html>
 <head>
     <title>Dashboard - Tax Advisor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .logout-btn:hover {
+            background: #b91c1c;
+        }
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome, {{ user_name }}!</h1>
-    <h2>Dashboard - Phase 1</h2>
+    <div class="header">
+        <h1>Welcome, {{ user_name }}!</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
     
-    <div style="border:1px solid #ccc; padding:20px; margin:20px 0;">
+    <h2>Dashboard - Phase 2 (Login Working)</h2>
+    
+    <div class="section">
         <h3>Upload Section (Phase 3)</h3>
         <p>File upload coming in Phase 3</p>
+        <div style="border:2px dashed #ccc; padding:40px; text-align:center; background:#fafafa;">
+            📤 Drag & drop payslip here (Coming Soon)
+        </div>
     </div>
     
-    <div style="border:1px solid #ccc; padding:20px; margin:20px 0;">
+    <div class="section">
         <h3>Results Section (Phase 4-5)</h3>
         <p>AI analysis coming in Phase 4</p>
+        <div style="background:#fafafa; padding:20px; border-radius:5px;">
+            <p><em>No data yet. Upload a payslip in Phase 3 to see results.</em></p>
+        </div>
     </div>
     
-    <a href="/tax-bot">Go to Tax Advisor</a><br>
-    <a href="/login">Logout</a>
+    <p><a href="/tax-bot">Go to Tax Advisor →</a></p>
 </body>
 </html>

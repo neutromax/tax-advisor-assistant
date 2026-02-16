@@ -2,23 +2,88 @@
 <html>
 <head>
     <title>Tax Advisor - Tax Advisor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .chat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .bot-message {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .quick-btn {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .logout-btn {
+            background: #dc2626;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Tax Advisor Bot</h1>
-    <h2>Phase 1: Chat Interface Coming Soon</h2>
-    
-    <div style="border:1px solid #ccc; padding:20px; margin:20px 0; background:#f5f5f5;">
-        <p><strong>Bot:</strong> Hello! I'll help you with taxes in Phase 7!</p>
-        <p><em>This is just a placeholder for now.</em></p>
+    <div class="header">
+        <h1>Tax Advisor Bot</h1>
+        <a href="/logout" class="logout-btn">Logout</a>
     </div>
     
-    <div>
-        <p>Quick Actions (Phase 7):</p>
-        <button disabled>Analyze Income (Coming Soon)</button>
-        <button disabled>Section 80C (Coming Soon)</button>
-        <button disabled>Calculate Tax (Coming Soon)</button>
+    <h2>Phase 2 - Protected Page</h2>
+    <p>Welcome, {{ user_name }}! This page is protected - only logged in users can see it.</p>
+    
+    <div class="chat-box">
+        <div class="bot-message">
+            <strong>Bot:</strong> Hello! I'll help you with taxes in Phase 7!
+            <p><em>This is just a placeholder for now.</em></p>
+        </div>
+        
+        <div class="quick-actions">
+            <button class="quick-btn" disabled>Analyze Income</button>
+            <button class="quick-btn" disabled>Section 80C</button>
+            <button class="quick-btn" disabled>Calculate Tax</button>
+        </div>
     </div>
     
-    <a href="/dashboard">Back to Dashboard</a>
+    <a href="/dashboard" class="back-link">← Back to Dashboard</a>
 </body>
 </html>
