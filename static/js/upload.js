@@ -323,46 +323,254 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Analyze button click
-    if (analyzeBtn) {
-        analyzeBtn.addEventListener('click', async () => {
-            if (!selectedFile) return;
+    analyzeBtn.addEventListener('click', async () => {
+        if (!selectedFile || !selectedFileData) return;
+        
+        // Show loading
+        const btnText = analyzeBtn.querySelector('.btn-text');
+        const btnLoader = analyzeBtn.querySelector('.btn-loader');
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'block';
+        analyzeBtn.disabled = true;
+        
+        // Show progress bar
+        progressBar.style.display = 'block';
+        progressFill.style.width = '0%';
+        
+        try {
+            // Send to backend
+            const response = await fetch('/analyze-payslip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: selectedFileData })
+            });
             
-            // Show loading
-            const btnText = analyzeBtn.querySelector('.btn-text');
-            const btnLoader = analyzeBtn.querySelector('.btn-loader');
-            btnText.style.display = 'none';
-            btnLoader.style.display = 'block';
-            analyzeBtn.disabled = true;
+            const result = await response.json();
             
-            // Show progress bar
-            progressBar.style.display = 'block';
-            progressFill.style.width = '0%';
+            progressFill.style.width = '100%';
             
-            // Simulate progress
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 10;
-                progressFill.style.width = progress + '%';
-                if (progress >= 100) {
-                    clearInterval(interval);
-                }
-            }, 200);
+            if (result.success) {
+                // Show results section
+                showResults(result.data);
+            } else {
+                alert('Analysis failed: ' + (result.error || 'Unknown error'));
+            }
             
-            // Simulate API call
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Network error. Please try again.');
+        } finally {
+            // Reset button
             setTimeout(() => {
-                clearInterval(interval);
-                progressFill.style.width = '100%';
+                btnText.style.display = 'block';
+                btnLoader.style.display = 'none';
+                analyzeBtn.disabled = false;
+                progressBar.style.display = 'none';
+                progressFill.style.width = '0%';
+            }, 500);
+        }
+    });
+
+    function showResults(data) {
+        // Find the results section (the second section in the container)
+        const sections = document.querySelectorAll('.section');
+        const resultsSection = sections[1]; // Second section is Analysis Results
+        
+        if (!resultsSection) {
+            console.error('Results section not found');
+            return;
+        }
+        
+        // Format currency values with proper styling
+        const formatCurrency = (value) => {
+            if (!value) return '';
+            const num = parseFloat(value);
+            if (isNaN(num)) return '';
+            return '₹' + num.toLocaleString('en-IN');
+        };
+        
+        // Helper to safely get value or empty string
+        const safeValue = (val) => val !== null && val !== undefined ? val : '';
+        
+        // Create results HTML with enhanced visibility
+        const resultsHTML = `
+            <h2 class="section-title">📊 Analysis Results</h2>
+            <p class="section-desc">AI-extracted information from your documents</p>
+            <div class="results-grid">
+                <div class="result-card">
+                    <div class="result-label">
+                        <span>👤</span> EMPLOYEE NAME
+                    </div>
+                    <input type="text" id="editName" class="result-input" 
+                           value="${safeValue(data.name)}" 
+                           placeholder="Enter full name">
+                    ${data.name ? `<div class="extracted-value">${data.name}</div>` : ''}
+                </div>
                 
-                setTimeout(() => {
-                    alert('🎉 Analysis complete! (Phase 4 coming soon)');
-                    
-                    // Reset button
-                    btnText.style.display = 'block';
-                    btnLoader.style.display = 'none';
-                    analyzeBtn.disabled = false;
-                    progressBar.style.display = 'none';
-                }, 500);
-            }, 2000);
+                <div class="result-card">
+                    <div class="result-label">
+                        <span>💰</span> MONTHLY INCOME
+                    </div>
+                    <input type="number" id="editIncome" class="result-input" 
+                           value="${safeValue(data.income)}" 
+                           placeholder="Enter amount in ₹">
+                    ${data.income ? `<div class="extracted-value">${formatCurrency(data.income)}</div>` : ''}
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">
+                        <span>🏢</span> EMPLOYER
+                    </div>
+                    <input type="text" id="editEmployer" class="result-input" 
+                           value="${safeValue(data.employer)}" 
+                           placeholder="Enter company name">
+                    ${data.employer ? `<div class="extracted-value">${data.employer}</div>` : ''}
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">
+                        <span>📅</span> PAY DATE
+                    </div>
+                    <input type="text" id="editDate" class="result-input" 
+                           value="${safeValue(data.date)}" 
+                           placeholder="DD-MM-YYYY">
+                    ${data.date ? `<div class="extracted-value">${data.date}</div>` : ''}
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">
+                        <span>💸</span> TOTAL DEDUCTIONS
+                    </div>
+                    <input type="number" id="editDeductions" class="result-input" 
+                           value="${safeValue(data.deductions)}" 
+                           placeholder="Enter deductions in ₹">
+                    ${data.deductions ? `<div class="extracted-value">${formatCurrency(data.deductions)}</div>` : ''}
+                </div>
+                
+                <div class="result-card">
+                    <div class="result-label">
+                        <span>✅</span> NET PAY (TAKE HOME)
+                    </div>
+                    <input type="number" id="editNetPay" class="result-input" 
+                           value="${safeValue(data.net_pay)}" 
+                           placeholder="Enter net amount in ₹">
+                    ${data.net_pay ? `<div class="extracted-value">${formatCurrency(data.net_pay)}</div>` : ''}
+                </div>
+            </div>
+            
+            <div class="results-actions">
+                <button id="confirmResults" class="primary-btn">
+                    <span>✓</span> Confirm & Save
+                </button>
+                <button id="reanalyzeBtn" class="secondary-btn">
+                    <span>⟲</span> Re-analyze
+                </button>
+                <button id="manualEntryBtn" class="secondary-btn">
+                    <span>✎</span> Enter Manually
+                </button>
+            </div>
+        `;
+        
+        // Update the results section content
+        resultsSection.innerHTML = resultsHTML;
+        
+        // Add event listeners for the new buttons
+        document.getElementById('confirmResults')?.addEventListener('click', function() {
+            const confirmedData = {
+                name: document.getElementById('editName')?.value,
+                income: document.getElementById('editIncome')?.value,
+                employer: document.getElementById('editEmployer')?.value,
+                date: document.getElementById('editDate')?.value,
+                deductions: document.getElementById('editDeductions')?.value,
+                net_pay: document.getElementById('editNetPay')?.value
+            };
+            console.log('✅ Data confirmed:', confirmedData);
+            
+            // Show success message
+            alert('✅ Information saved successfully!');
+        });
+        
+        document.getElementById('reanalyzeBtn')?.addEventListener('click', function() {
+            // Clear results and show placeholder
+            resultsSection.innerHTML = `
+                <h2 class="section-title">📊 Analysis Results</h2>
+                <p class="section-desc">AI-extracted information from your documents</p>
+                <div class="results-placeholder">
+                    <span>📄</span>
+                    <p>Upload a payslip to see results</p>
+                </div>
+            `;
+            
+            // Reset upload area to allow new upload
+            resetUpload();
+        });
+        
+        document.getElementById('manualEntryBtn')?.addEventListener('click', function() {
+            // Create manual entry form
+            resultsSection.innerHTML = `
+                <h2 class="section-title">✎ Manual Entry</h2>
+                <p class="section-desc">Enter your salary details manually</p>
+                <div class="manual-form">
+                    <div class="form-group">
+                        <label>👤 Employee Name</label>
+                        <input type="text" id="manualName" class="result-input" placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label>💰 Monthly Income</label>
+                        <input type="number" id="manualIncome" class="result-input" placeholder="Enter amount in ₹">
+                    </div>
+                    <div class="form-group">
+                        <label>🏢 Employer</label>
+                        <input type="text" id="manualEmployer" class="result-input" placeholder="Enter company name">
+                    </div>
+                    <div class="form-group">
+                        <label>📅 Pay Date</label>
+                        <input type="text" id="manualDate" class="result-input" placeholder="DD-MM-YYYY">
+                    </div>
+                    <div class="form-group">
+                        <label>💸 Total Deductions</label>
+                        <input type="number" id="manualDeductions" class="result-input" placeholder="Enter deductions in ₹">
+                    </div>
+                    <div class="form-group">
+                        <label>✅ Net Pay</label>
+                        <input type="number" id="manualNetPay" class="result-input" placeholder="Enter net amount in ₹">
+                    </div>
+                    <div class="results-actions">
+                        <button id="saveManualBtn" class="primary-btn">
+                            <span>✓</span> Save Manual Entry
+                        </button>
+                        <button id="backToAnalyzeBtn" class="secondary-btn">
+                            <span>←</span> Back to Upload
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners for manual form
+            document.getElementById('saveManualBtn')?.addEventListener('click', function() {
+                const manualData = {
+                    name: document.getElementById('manualName')?.value,
+                    income: document.getElementById('manualIncome')?.value,
+                    employer: document.getElementById('manualEmployer')?.value,
+                    date: document.getElementById('manualDate')?.value,
+                    deductions: document.getElementById('manualDeductions')?.value,
+                    net_pay: document.getElementById('manualNetPay')?.value
+                };
+                console.log('📝 Manual data:', manualData);
+                alert('✅ Manual entry saved!');
+            });
+            
+            document.getElementById('backToAnalyzeBtn')?.addEventListener('click', function() {
+                // Go back to results placeholder
+                resultsSection.innerHTML = `
+                    <h2 class="section-title">📊 Analysis Results</h2>
+                    <p class="section-desc">AI-extracted information from your documents</p>
+                    <div class="results-placeholder">
+                        <span>📄</span>
+                        <p>Upload a payslip to see results</p>
+                    </div>
+                `;
+            });
         });
     }
     

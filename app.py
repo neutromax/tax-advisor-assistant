@@ -1,14 +1,23 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import os
+import re
+import requests
+import base64
+import io
+import json
 from dotenv import load_dotenv
 from database import db
 from authlib.integrations.flask_client import OAuth
 from authlib.common.security import generate_token
+from PIL import Image
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'dev-key-change-this')
+
+# OCR.space API configuration
+OCR_SPACE_API_KEY = os.getenv('OCR_SPACE_API_KEY')
 
 # Session security
 app.config.update(
@@ -20,7 +29,7 @@ app.config.update(
 # Initialize OAuth
 oauth = OAuth(app)
 
-# Configure Google OAuth - FIXED VERSION
+# Configure Google OAuth
 google = oauth.register(
     name='google',
     client_id=os.getenv('GOOGLE_CLIENT_ID'),
@@ -40,89 +49,187 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-# Google Login Route
+# ========== OCR.SPACE PAYSLIP ANALYSIS ==========
+@app.route('/analyze-payslip', methods=['POST'])
+def analyze_payslip():
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not OCR_SPACE_API_KEY:
+        return jsonify({"success": False, "error": "OCR.space API not configured"}), 500
+    
+    try:
+        data = request.json
+        image_data = data.get('image')
+        
+        if not image_data:
+            return jsonify({"error": "No image provided"}), 400
+        
+        # Decode base64 image
+        if ',' in image_data:
+            image_data = image_data.split(',')[1]
+        
+        image_bytes = base64.b64decode(image_data)
+        
+        # Call OCR.space API
+        response = requests.post(
+            'https://api.ocr.space/parse/image',
+            data={
+                'apikey': OCR_SPACE_API_KEY,
+                'language': 'eng',
+                'isOverlayRequired': False,
+                'detectOrientation': True,
+                'scale': True,
+                'OCREngine': '2'  # Engine 2 is better for printed text
+            },
+            files={'file': ('payslip.jpg', image_bytes)}
+        )
+        
+        ocr_result = response.json()
+        
+        if ocr_result.get('IsErroredOnProcessing'):
+            error_msg = ocr_result.get('ErrorMessage', ['Unknown error'])[0]
+            return jsonify({"success": False, "error": f"OCR failed: {error_msg}"}), 500
+        
+        # Extract text from OCR result
+        extracted_text = ""
+        if 'ParsedResults' in ocr_result:
+            for page in ocr_result['ParsedResults']:
+                extracted_text += page['ParsedText']
+        
+        print(f"📝 Extracted text: {extracted_text[:500]}...")  # Debug first 500 chars
+        
+        # Parse the extracted text to find relevant fields
+        parsed_data = parse_payslip_text(extracted_text)
+        
+        return jsonify({
+            "success": True,
+            "data": parsed_data,
+            "raw_text": extracted_text[:1000]  # Send preview for debugging
+        })
+        
+    except Exception as e:
+        print(f"❌ Analysis error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+def parse_payslip_text(text):
+    """Extract structured data from raw OCR text"""
+    
+    # Initialize with null values
+    result = {
+        "name": None,
+        "income": None,
+        "employer": None,
+        "date": None,
+        "deductions": None,
+        "net_pay": None
+    }
+    
+    # Common patterns in Indian payslips
+    patterns = {
+        "name": [
+            r'(?:Name|Employee|Employee Name)[:\s]*([A-Za-z\s]+?)(?:\n|$)',
+            r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*(?:Employee|Staff)'
+        ],
+        "income": [
+            r'(?:Total|Gross|Salary|Income|Earnings)[:\s]*[₹]?\s*([\d,]+)',
+            r'([\d,]+)\s*(?:per month|monthly|p.m.)',
+            r'Basic(?:\s+Pay)?[:\s]*[₹]?\s*([\d,]+)'
+        ],
+        "employer": [
+            r'(?:Company|Employer|Organization)[:\s]*([A-Za-z\s]+?)(?:\n|$)',
+            r'([A-Z][A-Za-z\s]+?(?:Pvt\.? Ltd\.?|Ltd\.?|Inc\.?))'
+        ],
+        "date": [
+            r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+            r'(?:Date|Pay Date|Period)[:\s]*([A-Za-z]+\s+\d{4})'
+        ],
+        "deductions": [
+            r'(?:Total Deductions|Deductions)[:\s]*[₹]?\s*([\d,]+)',
+            r'(?:PF|Provident Fund|Professional Tax|TDS)[:\s]*[₹]?\s*([\d,]+)'
+        ],
+        "net_pay": [
+            r'(?:Net Pay|Net Salary|Take Home|Net Amount)[:\s]*[₹]?\s*([\d,]+)',
+            r'([\d,]+)\s*(?:credited|take home)'
+        ]
+    }
+    
+    # Extract each field
+    for key, pattern_list in patterns.items():
+        for pattern in pattern_list:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                value = match.group(1).strip()
+                
+                # Clean up numbers (remove commas, convert to float)
+                if key in ["income", "deductions", "net_pay"]:
+                    value = re.sub(r'[^\d.]', '', value)
+                    try:
+                        value = float(value)
+                    except:
+                        pass
+                
+                result[key] = value
+                break
+    
+    return result
+
+# ========== GOOGLE LOGIN ROUTES ==========
 @app.route('/google-login')
 def google_login():
-    # Generate state token for security
     state = generate_token()
     session['google_state'] = state
     
-    # IMPORTANT: Replace with YOUR actual Codespaces URL
+    # Replace with your actual Codespaces URL
     redirect_uri = "https://musical-parakeet-97jr57xp5r552wrp-5000.app.github.dev/google/auth"
     
     return google.authorize_redirect(redirect_uri, state=state)
 
-# Google Callback Route - FIXED VERSION
 @app.route('/google/auth')
 def google_auth():
     try:
         print("=== Google Auth Callback Started ===")
         
-        # Verify state matches
         expected_state = session.get('google_state')
         received_state = request.args.get('state')
         
-        print(f"Expected state: {expected_state}")
-        print(f"Received state: {received_state}")
-        
         if expected_state and expected_state != received_state:
-            return render_template('login.html', error="Security verification failed. Please try again.")
+            return render_template('login.html', error="Security verification failed")
         
-        # Get token from Google
         token = google.authorize_access_token()
-        print(f"Token received: {token}")
-        
-        # FIX: Get user info without nonce parameter
-        # Use this method instead of parse_id_token
         user_info = google.userinfo()
-        print(f"User info: {user_info}")
         
         if not user_info:
-            # Fallback method
             user_info = token.get('userinfo', {})
             if not user_info:
-                # Try to get from id_token
                 import jwt
                 id_token = token.get('id_token')
                 if id_token:
                     user_info = jwt.decode(id_token, options={"verify_signature": False})
         
-        print(f"Final user info: {user_info}")
-        
-        # Extract user details
         email = user_info.get('email')
         if not email:
             return render_template('login.html', error="Could not get email from Google")
         
         name = user_info.get('name', email.split('@')[0])
         
-        print(f"Email: {email}, Name: {name}")
-        
-        # Check if user exists in our database
         user = db.get_user(email)
-        print(f"Existing user: {user}")
         
         if not user:
-            # Create new user for Google login
-            print("Creating new user...")
             success, message = db.create_user(
                 email=email,
                 password='GOOGLE_AUTH_USER',
                 name=name
             )
-            print(f"User creation result: {success}, {message}")
             if not success:
                 return render_template('login.html', error=f"Failed to create user: {message}")
         
-        # Log the user in
         session['user_email'] = email
         session['user_name'] = name
         session.permanent = True
         
-        # Clear the state
         session.pop('google_state', None)
         
-        print("Login successful, redirecting to dashboard")
         return redirect(url_for('dashboard'))
         
     except Exception as e:
@@ -131,7 +238,7 @@ def google_auth():
         traceback.print_exc()
         return render_template('login.html', error=f"Google login failed: {str(e)}")
 
-# Rest of your routes remain the same...
+# ========== AUTH ROUTES ==========
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_email' in session:
@@ -196,6 +303,7 @@ def signup():
     
     return render_template('signup.html')
 
+# ========== PAGE ROUTES ==========
 @app.route('/dashboard')
 def dashboard():
     if 'user_email' not in session:
@@ -217,13 +325,21 @@ def logout():
 
 @app.route('/dev-login')
 def dev_login():
-    # Automatically log in as a test user
     session['user_email'] = 'dev@test.com'
     session['user_name'] = 'Developer'
     session.permanent = True
     return redirect(url_for('dashboard'))
 
+# ========== UTILITY ROUTES ==========
+@app.route('/test-ocr')
+def test_ocr():
+    """Simple route to test OCR.space connection"""
+    if not OCR_SPACE_API_KEY:
+        return "❌ OCR.space API key not configured in .env"
+    return "✅ OCR.space API key is configured!"
+
 if __name__ == '__main__':
-    print("🚀 Tax Advisor - Phase 2.5 with Google Login (FIXED)")
+    print("🚀 Tax Advisor - Phase 4 with OCR.space")
+    print(f"OCR.space API Key: {'✅ Configured' if OCR_SPACE_API_KEY else '❌ Not configured'}")
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
