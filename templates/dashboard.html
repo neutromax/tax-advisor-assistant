@@ -3,77 +3,557 @@
 <head>
     <title>Dashboard - Tax Advisor</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background: #f5f5f5;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            background: #0a0c10;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background Grid */
+        .grid-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 255, 196, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 196, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        /* Floating Orbs */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            animation: float 15s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 255, 196, 0.15);
+            top: -200px;
+            right: -200px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(0, 150, 255, 0.15);
+            bottom: -150px;
+            left: -150px;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 215, 0, 0.1);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
         .header {
+            background: rgba(20, 24, 32, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 196, 0.15);
+            border-radius: 24px;
+            padding: 24px 32px;
+            margin-bottom: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            animation: slideDown 0.5s ease-out;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
-        .section {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        h1, h2, h3 {
-            color: #333;
-            margin-top: 0;
-        }
-        .logout-btn {
-            background: #dc2626;
+
+        .welcome h1 {
             color: white;
-            padding: 8px 16px;
-            text-decoration: none;
-            border-radius: 5px;
+            font-size: 24px;
+            margin-bottom: 5px;
         }
+
+        .welcome p {
+            color: #8a8f99;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 70, 70, 0.2);
+            border: 1px solid rgba(255, 70, 70, 0.3);
+            color: #ff8a8a;
+            padding: 10px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
         .logout-btn:hover {
-            background: #b91c1c;
+            background: rgba(255, 70, 70, 0.3);
+            transform: translateY(-2px);
         }
-        a {
-            color: #667eea;
+
+        .section {
+            background: rgba(20, 24, 32, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 196, 0.15);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 30px;
+            animation: fadeIn 0.5s ease-out;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-title {
+            color: white;
+            font-size: 20px;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #ffffff 0%, #00ffc4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .section-desc {
+            color: #8a8f99;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        /* Upload Area Styles */
+        .upload-area {
+            border: 2px dashed rgba(0, 255, 196, 0.3);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .upload-area:hover {
+            border-color: #00ffc4;
+            background: rgba(0, 255, 196, 0.05);
+        }
+
+        .upload-area.drag-over {
+            border-color: #00ffc4;
+            background: rgba(0, 255, 196, 0.1);
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            color: #00ffc4;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .upload-text {
+            color: white;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .upload-hint {
+            color: #8a8f99;
+            font-size: 13px;
+        }
+
+        /* Preview Container */
+        .preview-container {
+            width: 100%;
+            max-height: 250px;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .image-preview {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 12px;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .preview-actions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+
+        .btn-view, .btn-remove {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-view {
+            background: rgba(0, 255, 196, 0.9);
+            color: #0a0c10;
+        }
+
+        .btn-view:hover {
+            background: #00ffc4;
+            transform: scale(1.1);
+        }
+
+        .btn-remove {
+            background: rgba(255, 70, 70, 0.9);
+            color: white;
+        }
+
+        .btn-remove:hover {
+            background: #ff4646;
+            transform: scale(1.1);
+        }
+
+        /* File Icon Large */
+        .file-icon-large {
+            padding: 30px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .file-icon-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-emoji {
+            font-size: 48px;
+        }
+
+        .file-type-text {
+            color: white;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 196, 0.1);
+        }
+
+        .file-details {
+            display: flex;
+            justify-content: space-between;
+            color: white;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .file-type-badge span {
+            background: rgba(0, 255, 196, 0.2);
+            color: #00ffc4;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .progress-bar {
+            margin-top: 10px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffc4, #00b8ff);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00ffc4, #00b8ff);
+            border: none;
+            border-radius: 14px;
+            color: #0a0c10;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 196, 0.4);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-loader {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #0a0c10;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results-placeholder {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            color: #8a8f99;
+            text-align: center;
+            font-style: italic;
+            border: 1px solid rgba(0, 255, 196, 0.1);
+        }
+
+        .nav-link {
+            display: inline-block;
+            color: white;
             text-decoration: none;
+            padding: 12px 24px;
+            background: rgba(0, 255, 196, 0.1);
+            border: 1px solid rgba(0, 255, 196, 0.2);
+            border-radius: 12px;
+            transition: all 0.3s ease;
         }
-        a:hover {
-            text-decoration: underline;
+
+        .nav-link:hover {
+            background: rgba(0, 255, 196, 0.2);
+            transform: translateX(5px);
+            border-color: #00ffc4;
         }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .image-preview {
+                height: 150px;
+            }
+        }
+        /* Ensure images load properly */
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    background: rgba(0, 0, 0, 0.3); /* Show background while loading */
+}
+
+/* Loading state for image */
+.image-preview img[src=""] {
+    opacity: 0;
+}
+
+.image-preview img[src]:not([src=""]) {
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Welcome, {{ user_name }}!</h1>
-        <a href="/logout" class="logout-btn">Logout</a>
-    </div>
-    
-    <h2>Dashboard - Phase 2 (Login Working)</h2>
-    
-    <div class="section">
-        <h3>Upload Section (Phase 3)</h3>
-        <p>File upload coming in Phase 3</p>
-        <div style="border:2px dashed #ccc; padding:40px; text-align:center; background:#fafafa;">
-            📤 Drag & drop payslip here (Coming Soon)
+    <!-- Animated Background -->
+    <div class="grid-background"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <div class="container">
+        <div class="header">
+            <div class="welcome">
+                <h1>Welcome back, {{ user_name }}! 👋</h1>
+                <p>Your AI-powered tax assistant is ready to help</p>
+            </div>
+            <a href="/logout" class="logout-btn">Logout</a>
         </div>
-    </div>
-    
-    <div class="section">
-        <h3>Results Section (Phase 4-5)</h3>
-        <p>AI analysis coming in Phase 4</p>
-        <div style="background:#fafafa; padding:20px; border-radius:5px;">
-            <p><em>No data yet. Upload a payslip in Phase 3 to see results.</em></p>
+        
+        <!-- Upload Section -->
+        <div class="section" style="animation-delay: 0.1s">
+            <h2 class="section-title">📤 Upload Payslip</h2>
+            <p class="section-desc">Upload your payslip or bank statement for AI analysis</p>
+            
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" accept="image/*,.pdf" style="display: none;">
+                <div class="upload-placeholder" id="uploadPlaceholder">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p class="upload-text">Click to upload or drag and drop</p>
+                    <p class="upload-hint">Images (JPG, PNG) or PDF (Max 5MB)</p>
+                </div>
+                
+                <!-- Image Preview (for images) -->
+                <div class="preview-container" id="previewContainer" style="display: none;">
+                    <div class="image-preview" id="imagePreview">
+                        <img id="previewImage" src="" alt="Preview">
+                        <div class="preview-actions">
+                            <button class="btn-view" id="viewImageBtn" title="View full size">🔍</button>
+                            <button class="btn-remove" id="removeImageBtn" title="Remove">✕</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PDF/Other File Icon -->
+                <div class="file-icon-large" id="pdfIcon" style="display: none;">
+                    <div class="file-icon-content">
+                        <span class="file-emoji">📄</span>
+                        <span class="file-type-text">PDF Document</span>
+                        <div class="file-actions">
+                            <button class="btn-view" id="viewPdfBtn">🔍</button>
+                            <button class="btn-remove" id="removePdfBtn">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="file-info" id="fileInfo" style="display: none;">
+                <div class="file-details">
+                    <span id="fileName"></span>
+                    <span id="fileSize"></span>
+                </div>
+                <div class="file-type-badge">
+                    <span id="fileType"></span>
+                </div>
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+            
+            <button id="analyzeBtn" class="action-btn" style="display: none;">
+                <span class="btn-text">Analyze Document</span>
+                <div class="btn-loader"></div>
+            </button>
         </div>
+        
+        <!-- Results Section -->
+        <div class="section" style="animation-delay: 0.2s">
+            <h2 class="section-title">📊 Analysis Results</h2>
+            <p class="section-desc">AI-extracted information from your documents</p>
+            
+            <div class="results-placeholder">
+                <span style="font-size: 24px; display: block; margin-bottom: 10px;">📄</span>
+                No data yet. Upload a payslip to see results.
+            </div>
+        </div>
+        
+        <a href="/tax-bot" class="nav-link">Chat with Tax Advisor →</a>
     </div>
-    
-    <p><a href="/tax-bot">Go to Tax Advisor →</a></p>
+
+    <script src="{{ url_for('static', filename='js/upload.js') }}"></script>
 </body>
 </html>
