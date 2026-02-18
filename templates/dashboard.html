@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <!-- Add this line - put it anywhere in the head section -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Dashboard - Tax Advisor</title>
     <style>
         * {
@@ -654,6 +656,67 @@
     font-weight: 600;
     margin-right: 4px;
 }
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Apply to everything */
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Form group styles */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-weight: 500;
+    color: #c0c4cc;
+    margin-bottom: 8px;
+    display: block;
+    font-size: 14px;
+    letter-spacing: 0.3px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    font-size: 15px;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #00ffc4;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 0 3px rgba(0, 255, 196, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #4a4f59;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+    font-size: 14px;
+}
+/* Loading spinner for re-analyze */
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    margin: 20px auto;
+    border: 3px solid rgba(0, 255, 196, 0.3);
+    border-radius: 50%;
+    border-top-color: #00ffc4;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
     </style>
 </head>
 <body>
@@ -662,6 +725,141 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
+    <!-- Image Preview Modal -->
+<div id="imageModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Document Preview</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <img id="modalImage" src="" alt="Preview">
+            <div id="modalPdf" style="display: none;">
+                <embed id="pdfViewer" type="application/pdf" width="100%" height="500px">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="downloadBtn" class="download-btn" download>⬇️ Download</a>
+            <button class="close-btn" onclick="closeModal()">✕ Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add modal styles -->
+<style>
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: #1a1e24;
+    border: 1px solid #00ffc4;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,255,196,0.2);
+}
+
+.modal-header {
+    padding: 20px;
+    background: #0f1218;
+    border-bottom: 1px solid #00ffc4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    color: white;
+    margin: 0;
+    font-size: 20px;
+}
+
+.close-modal {
+    color: #8a8f99;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.close-modal:hover {
+    color: #00ffc4;
+}
+
+.modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.modal-body img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.modal-footer {
+    padding: 20px;
+    background: #0f1218;
+    border-top: 1px solid #00ffc4;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+.download-btn {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #00ffc4, #00b8ff);
+    border: none;
+    border-radius: 8px;
+    color: #0a0c10;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,255,196,0.4);
+}
+
+.close-btn {
+    padding: 10px 24px;
+    background: rgba(255,70,70,0.9);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.close-btn:hover {
+    background: #ff4646;
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
+    document.getElementById('modalImage').src = '';
+    document.getElementById('pdfViewer').src = '';
+}
+</script>
 
     <div class="container">
         <div class="header">
@@ -754,7 +952,128 @@
         💬 Chat with Tax Advisor →
     </a>
 </div>
+<!-- Image Preview Modal -->
+<div id="imageModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Document Preview</h3>
+            <span class="close-modal">&times;</span>
+        </div>
+        <div class="modal-body">
+            <img id="modalImage" src="" alt="Preview">
+            <div id="modalPdf" style="display: none;">
+                <embed id="pdfViewer" type="application/pdf" width="100%" height="500px">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="downloadBtn" class="download-btn" download>⬇️ Download</a>
+            <button class="close-btn" onclick="closeModal()">✕ Close</button>
+        </div>
+    </div>
+</div>
 
+<style>
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal-content {
+    background: #1a1e24;
+    border: 1px solid #00ffc4;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,255,196,0.2);
+}
+.modal-header {
+    padding: 20px;
+    background: #0f1218;
+    border-bottom: 1px solid #00ffc4;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 {
+    color: white;
+    margin: 0;
+    font-size: 20px;
+}
+.close-modal {
+    color: #8a8f99;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+.close-modal:hover {
+    color: #00ffc4;
+}
+.modal-body {
+    padding: 20px;
+    max-height: 60vh;
+    overflow: auto;
+}
+.modal-body img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+.modal-footer {
+    padding: 20px;
+    background: #0f1218;
+    border-top: 1px solid #00ffc4;
+    display: flex;
+    gap: 15px;
+    justify-content: flex-end;
+}
+.download-btn {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #00ffc4, #00b8ff);
+    border: none;
+    border-radius: 8px;
+    color: #0a0c10;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(0,255,196,0.4);
+}
+.close-btn {
+    padding: 10px 24px;
+    background: rgba(255,70,70,0.9);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.close-btn:hover {
+    background: #ff4646;
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+function closeModal() {
+    document.getElementById('imageModal').style.display = 'none';
+    document.getElementById('modalImage').src = '';
+    document.getElementById('pdfViewer').src = '';
+}
+</script>
         
        
     </div>

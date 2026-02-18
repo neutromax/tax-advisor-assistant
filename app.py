@@ -97,15 +97,14 @@ def analyze_payslip():
             for page in ocr_result['ParsedResults']:
                 extracted_text += page['ParsedText']
         
-        print(f"📝 Extracted text: {extracted_text[:500]}...")  # Debug first 500 chars
+        print(f"📝 Extracted text length: {len(extracted_text)} chars")
         
         # Parse the extracted text to find relevant fields
         parsed_data = parse_payslip_text(extracted_text)
         
         return jsonify({
             "success": True,
-            "data": parsed_data,
-            "raw_text": extracted_text[:1000]  # Send preview for debugging
+            "data": parsed_data
         })
         
     except Exception as e:
@@ -113,7 +112,9 @@ def analyze_payslip():
         return jsonify({"success": False, "error": str(e)}), 500
 
 def parse_payslip_text(text):
-    """Extract structured data from raw OCR text"""
+    """Extract structured data from raw OCR text with improved patterns for this payslip format"""
+    
+    print("🔍 Parsing payslip text...")
     
     # Initialize with null values
     result = {
@@ -125,53 +126,62 @@ def parse_payslip_text(text):
         "net_pay": None
     }
     
-    # Common patterns in Indian payslips
-    patterns = {
-        "name": [
-            r'(?:Name|Employee|Employee Name)[:\s]*([A-Za-z\s]+?)(?:\n|$)',
-            r'([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*(?:Employee|Staff)'
-        ],
-        "income": [
-            r'(?:Total|Gross|Salary|Income|Earnings)[:\s]*[₹]?\s*([\d,]+)',
-            r'([\d,]+)\s*(?:per month|monthly|p.m.)',
-            r'Basic(?:\s+Pay)?[:\s]*[₹]?\s*([\d,]+)'
-        ],
-        "employer": [
-            r'(?:Company|Employer|Organization)[:\s]*([A-Za-z\s]+?)(?:\n|$)',
-            r'([A-Z][A-Za-z\s]+?(?:Pvt\.? Ltd\.?|Ltd\.?|Inc\.?))'
-        ],
-        "date": [
-            r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
-            r'(?:Date|Pay Date|Period)[:\s]*([A-Za-z]+\s+\d{4})'
-        ],
-        "deductions": [
-            r'(?:Total Deductions|Deductions)[:\s]*[₹]?\s*([\d,]+)',
-            r'(?:PF|Provident Fund|Professional Tax|TDS)[:\s]*[₹]?\s*([\d,]+)'
-        ],
-        "net_pay": [
-            r'(?:Net Pay|Net Salary|Take Home|Net Amount)[:\s]*[₹]?\s*([\d,]+)',
-            r'([\d,]+)\s*(?:credited|take home)'
-        ]
-    }
+    # Clean up text - remove extra spaces and newlines for better matching
+    text = re.sub(r'\s+', ' ', text)
     
-    # Extract each field
-    for key, pattern_list in patterns.items():
-        for pattern in pattern_list:
-            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
-            if match:
-                value = match.group(1).strip()
-                
-                # Clean up numbers (remove commas, convert to float)
-                if key in ["income", "deductions", "net_pay"]:
-                    value = re.sub(r'[^\d.]', '', value)
-                    try:
-                        value = float(value)
-                    except:
-                        pass
-                
-                result[key] = value
-                break
+    # Extract Employer (Company name at top)
+    employer_match = re.search(r'(Computer\s*Solutions\s*Pvt\.?\s*Ltd\.?)', text, re.IGNORECASE)
+    if employer_match:
+        result["employer"] = employer_match.group(1).strip()
     
+    # Extract Employee Name - Look for patterns like "Name : John S" or after Employee Id section
+    name_match = re.search(r'Name\s*:?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]?\.?)?)', text, re.IGNORECASE)
+    if name_match:
+        result["name"] = name_match.group(1).strip()
+    else:
+        # Try alternative: Look for name in the employee details section
+        name_match = re.search(r'Employee Id\s*\|\s*Department\s*\|\s*Name\s*\|\s*([A-Z][a-z]+\s+[A-Z][a-z]?\.?)', text, re.IGNORECASE)
+        if name_match:
+            result["name"] = name_match.group(1).strip()
+    
+    # Extract Date - Look for "February 2011" format
+    date_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', text, re.IGNORECASE)
+    if date_match:
+        result["date"] = f"{date_match.group(1)} {date_match.group(2)}"
+    else:
+        # Try MM/DD/YYYY format
+        date_match = re.search(r'(\d{2}[/-]\d{2}[/-]\d{4})', text)
+        if date_match:
+            result["date"] = date_match.group(1)
+    
+    # Extract Total Earnings (Income)
+    # First try "Total Earnings" pattern
+    income_match = re.search(r'Total\s*Earnings[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
+    if income_match:
+        result["income"] = float(income_match.group(1).replace(',', ''))
+    else:
+        # Sum up individual earnings
+        earnings = re.findall(r'(?:Basic Pay|Dearness Allowance|Conveyance Allowance|Medical Allowance|House Rent Allowance|Food Allowance)[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
+        if earnings:
+            total = sum(float(e.replace(',', '')) for e in earnings)
+            result["income"] = total
+    
+    # Extract Deductions - Look for Total Deductions
+    deductions_match = re.search(r'Total\s*Deductions[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
+    if deductions_match:
+        result["deductions"] = float(deductions_match.group(1).replace(',', ''))
+    
+    # Extract Net Pay - Look for Net Pay
+    net_pay_match = re.search(r'Net\s*Pay[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
+    if net_pay_match:
+        result["net_pay"] = float(net_pay_match.group(1).replace(',', ''))
+    
+    # Clean up any unreasonable values
+    for field in ["income", "deductions", "net_pay"]:
+        if result[field] and result[field] > 1000000:  # If > 10 lakhs, probably wrong
+            result[field] = None
+    
+    print(f"✅ Parsed result: {result}")
     return result
 
 # ========== GOOGLE LOGIN ROUTES ==========
