@@ -402,39 +402,62 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const safeValue = (val) => val !== null && val !== undefined ? val : '';
         
+        // Create update function for live editing
+        window.updateDisplay = function(field, value) {
+            const displayElement = document.getElementById(`display${field}`);
+            if (displayElement) {
+                if (field === 'Income' || field === 'Deductions' || field === 'NetPay') {
+                    const num = parseFloat(value);
+                    if (!isNaN(num)) {
+                        displayElement.textContent = formatCurrency(num);
+                    } else {
+                        displayElement.textContent = value || 'Not provided';
+                    }
+                } else {
+                    displayElement.textContent = value || 'Not provided';
+                }
+            }
+        };
+        
         const resultsHTML = `
             <h2 class="section-title">📊 Analysis Results</h2>
             <p class="section-desc">AI-extracted information from your documents</p>
             <div class="results-grid">
                 <div class="result-card">
                     <div class="result-label"><span>👤</span> EMPLOYEE NAME</div>
-                    <input type="text" id="editName" class="result-input" value="${safeValue(data.name)}" placeholder="Enter full name">
-                    ${data.name ? `<div class="extracted-value">${data.name}</div>` : ''}
+                    <input type="text" id="editName" class="result-input" value="${safeValue(data.name)}" 
+                           oninput="updateDisplay('Name', this.value)" placeholder="Enter full name">
+                    <div class="extracted-value" id="displayName">${safeValue(data.name)}</div>
                 </div>
                 <div class="result-card">
                     <div class="result-label"><span>💰</span> MONTHLY INCOME</div>
-                    <input type="number" id="editIncome" class="result-input" value="${safeValue(data.income)}" placeholder="Enter amount in ₹">
-                    ${data.income ? `<div class="extracted-value">${formatCurrency(data.income)}</div>` : ''}
+                    <input type="number" id="editIncome" class="result-input" value="${safeValue(data.income)}" 
+                           oninput="updateDisplay('Income', this.value)" placeholder="Enter amount in ₹">
+                    <div class="extracted-value" id="displayIncome">${data.income ? formatCurrency(data.income) : ''}</div>
                 </div>
                 <div class="result-card">
                     <div class="result-label"><span>🏢</span> EMPLOYER</div>
-                    <input type="text" id="editEmployer" class="result-input" value="${safeValue(data.employer)}" placeholder="Enter company name">
-                    ${data.employer ? `<div class="extracted-value">${data.employer}</div>` : ''}
+                    <input type="text" id="editEmployer" class="result-input" value="${safeValue(data.employer)}" 
+                           oninput="updateDisplay('Employer', this.value)" placeholder="Enter company name">
+                    <div class="extracted-value" id="displayEmployer">${safeValue(data.employer)}</div>
                 </div>
                 <div class="result-card">
                     <div class="result-label"><span>📅</span> PAY DATE</div>
-                    <input type="text" id="editDate" class="result-input" value="${safeValue(data.date)}" placeholder="DD-MM-YYYY">
-                    ${data.date ? `<div class="extracted-value">${data.date}</div>` : ''}
+                    <input type="text" id="editDate" class="result-input" value="${safeValue(data.date)}" 
+                           oninput="updateDisplay('Date', this.value)" placeholder="DD-MM-YYYY">
+                    <div class="extracted-value" id="displayDate">${safeValue(data.date)}</div>
                 </div>
                 <div class="result-card">
                     <div class="result-label"><span>💸</span> TOTAL DEDUCTIONS</div>
-                    <input type="number" id="editDeductions" class="result-input" value="${safeValue(data.deductions)}" placeholder="Enter deductions in ₹">
-                    ${data.deductions ? `<div class="extracted-value">${formatCurrency(data.deductions)}</div>` : ''}
+                    <input type="number" id="editDeductions" class="result-input" value="${safeValue(data.deductions)}" 
+                           oninput="updateDisplay('Deductions', this.value)" placeholder="Enter deductions in ₹">
+                    <div class="extracted-value" id="displayDeductions">${data.deductions ? formatCurrency(data.deductions) : ''}</div>
                 </div>
                 <div class="result-card">
                     <div class="result-label"><span>✅</span> NET PAY (TAKE HOME)</div>
-                    <input type="number" id="editNetPay" class="result-input" value="${safeValue(data.net_pay)}" placeholder="Enter net amount in ₹">
-                    ${data.net_pay ? `<div class="extracted-value">${formatCurrency(data.net_pay)}</div>` : ''}
+                    <input type="number" id="editNetPay" class="result-input" value="${safeValue(data.net_pay)}" 
+                           oninput="updateDisplay('NetPay', this.value)" placeholder="Enter net amount in ₹">
+                    <div class="extracted-value" id="displayNetPay">${data.net_pay ? formatCurrency(data.net_pay) : ''}</div>
                 </div>
             </div>
             <div class="results-actions">
@@ -446,8 +469,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         resultsSection.innerHTML = resultsHTML;
         
-        // Confirm button
-        document.getElementById('confirmResults')?.addEventListener('click', function() {
+        // ===== FIXED: Confirm button with actual save to database =====
+        document.getElementById('confirmResults')?.addEventListener('click', async function() {
             const confirmedData = {
                 name: document.getElementById('editName')?.value,
                 income: document.getElementById('editIncome')?.value,
@@ -456,24 +479,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 deductions: document.getElementById('editDeductions')?.value,
                 net_pay: document.getElementById('editNetPay')?.value
             };
-            console.log('✅ Data confirmed:', confirmedData);
-            alert('✅ Information saved successfully!');
+            
+            console.log('✅ Saving data to database:', confirmedData);
+            
+            // Show saving state
+            const confirmBtn = document.getElementById('confirmResults');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = '<span>⏳</span> Saving...';
+            confirmBtn.disabled = true;
+            
+            try {
+                // Save to database using the API endpoint
+                const response = await fetch('/api/save-monthly-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(confirmedData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Data saved successfully! Check your dashboard.');
+                    
+                    // Optionally refresh dashboard data if it's visible
+                    if (typeof window.loadDashboardData === 'function') {
+                        window.loadDashboardData();
+                    }
+                } else {
+                    alert('❌ Error saving data: ' + (result.error || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                console.error('Error saving data:', error);
+                alert('❌ Network error while saving. Please try again.');
+            } finally {
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
         });
         
-        // Re-analyze button - FIXED VERSION
+        // Re-analyze button
         document.getElementById('reanalyzeBtn')?.addEventListener('click', async function() {
             if (!selectedFile || !selectedFileData) {
                 alert('No file to re-analyze. Please upload first.');
                 return;
             }
             
-            // Show loading on the button
             const reanalyzeBtn = document.getElementById('reanalyzeBtn');
             const originalText = reanalyzeBtn.innerHTML;
             reanalyzeBtn.innerHTML = '<span>⟳</span> Analyzing...';
             reanalyzeBtn.disabled = true;
             
-            // Show progress in results section
             resultsSection.innerHTML = `
                 <h2 class="section-title">📊 Analysis Results</h2>
                 <p class="section-desc">Re-analyzing your document...</p>
@@ -484,7 +540,6 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             
             try {
-                // Re-send the SAME image to backend
                 const response = await fetch('/analyze-payslip', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -498,7 +553,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     showResults(result.data);
                 } else {
                     alert('Re-analysis failed: ' + (result.error || 'Unknown error'));
-                    // Restore previous results
                     if (currentExtractedData) {
                         showResults(currentExtractedData);
                     } else {

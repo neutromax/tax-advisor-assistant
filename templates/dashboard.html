@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <!-- Add this line - put it anywhere in the head section -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <title>Dashboard - Tax Advisor</title>
+    
     <style>
         * {
             margin: 0;
@@ -446,277 +447,476 @@
                 height: 150px;
             }
         }
-        /* Ensure images load properly */
-.image-preview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
-    background: rgba(0, 0, 0, 0.3); /* Show background while loading */
-}
 
-/* Loading state for image */
-.image-preview img[src=""] {
-    opacity: 0;
-}
+        /* Results Section Styles */
+        .results-section {
+            margin-top: 20px;
+        }
 
-.image-preview img[src]:not([src=""]) {
-    opacity: 1;
-    transition: opacity 
-    0.3s ease;
-}
-/* ===== RESULTS SECTION STYLES ===== */
-.results-section {
-    margin-top: 20px;
-}
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 25px 0;
+        }
 
-.results-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin: 25px 0;
-}
+        .result-card {
+            background: rgba(20, 24, 32, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 196, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
 
-.result-card {
-    background: rgba(20, 24, 32, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 255, 196, 0.2);
-    border-radius: 16px;
-    padding: 20px;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-}
+        .result-card:hover {
+            border-color: #00ffc4;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 30px rgba(0, 255, 196, 0.2);
+        }
 
-.result-card:hover {
-    border-color: #00ffc4;
-    transform: translateY(-4px);
-    box-shadow: 0 12px 30px rgba(0, 255, 196, 0.2);
-}
+        .result-label {
+            color: #8a8f99;
+            font-size: 13px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
 
-.result-label {
-    color: #8a8f99;
-    font-size: 13px;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
+        .result-input {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
 
-.result-label i, .result-label span {
-    color: #00ffc4;
-    font-size: 16px;
-}
+        .result-input:focus {
+            outline: none;
+            border-color: #00ffc4;
+            background: rgba(0, 255, 196, 0.1);
+            box-shadow: 0 0 0 3px rgba(0, 255, 196, 0.2);
+        }
 
-.result-input {
-    width: 100%;
-    padding: 12px 14px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
-    font-size: 15px;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    margin-bottom: 8px;
-}
+        .result-input::placeholder {
+            color: #4a4f59;
+        }
 
-.result-input:focus {
-    outline: none;
-    border-color: #00ffc4;
-    background: rgba(0, 255, 196, 0.1);
-    box-shadow: 0 0 0 3px rgba(0, 255, 196, 0.2);
-}
+        .extracted-value {
+            color: #00ffc4;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px dashed rgba(0, 255, 196, 0.3);
+        }
 
-.result-input::placeholder {
-    color: #4a4f59;
-    font-weight: 400;
-    font-size: 14px;
-}
+        .results-actions {
+            display: flex;
+            gap: 15px;
+            margin: 30px 0 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
 
-.field-hint {
-    display: block;
-    color: #00ffc4;
-    font-size: 13px;
-    font-weight: 600;
-    margin-top: 5px;
-    padding-left: 5px;
-    text-shadow: 0 0 10px rgba(0, 255, 196, 0.3);
-}
+        .primary-btn, .secondary-btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 160px;
+        }
 
-/* Results Actions */
-.results-actions {
-    display: flex;
-    gap: 15px;
-    margin: 30px 0 20px;
-    flex-wrap: wrap;
-    justify-content: center;
-}
+        .primary-btn {
+            background: linear-gradient(135deg, #00ffc4, #00b8ff);
+            color: #0a0c10;
+            box-shadow: 0 4px 15px rgba(0, 255, 196, 0.3);
+        }
 
-.primary-btn, .secondary-btn {
-    padding: 14px 28px;
-    border: none;
-    border-radius: 14px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-width: 160px;
-    position: relative;
-    overflow: hidden;
-}
+        .primary-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 255, 196, 0.5);
+        }
 
-.primary-btn {
-    background: linear-gradient(135deg, #00ffc4, #00b8ff);
-    color: #0a0c10;
-    box-shadow: 0 4px 15px rgba(0, 255, 196, 0.3);
-}
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
 
-.primary-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 255, 196, 0.5);
-}
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #00ffc4;
+            transform: translateY(-3px);
+        }
 
-.secondary-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-}
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-.secondary-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: #00ffc4;
-    transform: translateY(-3px);
-}
+        .modal-content {
+            background: #1a1e24;
+            border: 1px solid #00ffc4;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,255,196,0.2);
+        }
 
-/* Results Placeholder (when no data) */
-.results-placeholder {
-    background: rgba(20, 24, 32, 0.6);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 50px 30px;
-    text-align: center;
-    color: #8a8f99;
-    border: 1px solid rgba(0, 255, 196, 0.1);
-    margin: 20px 0;
-}
+        .modal-header {
+            padding: 20px;
+            background: #0f1218;
+            border-bottom: 1px solid #00ffc4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.results-placeholder span {
-    font-size: 48px;
-    display: block;
-    margin-bottom: 15px;
-    opacity: 0.7;
-}
+        .modal-header h3 {
+            color: white;
+            margin: 0;
+            font-size: 20px;
+        }
 
-.results-placeholder p {
-    font-size: 16px;
-    color: #b0b5c0;
-}
+        .close-modal {
+            color: #8a8f99;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .results-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .results-actions {
-        flex-direction: column;
-    }
-    
-    .primary-btn, .secondary-btn {
-        width: 100%;
-    }
-    
-    .result-card {
-        padding: 16px;
-    }
-}
+        .close-modal:hover {
+            color: #00ffc4;
+        }
 
-/* Value display styling */
-.extracted-value {
-    color: #00ffc4;
-    font-size: 18px;
-    font-weight: 600;
-    margin: 5px 0;
-    padding: 5px 0;
-    border-bottom: 1px dashed rgba(0, 255, 196, 0.3);
-}
+        .modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow: auto;
+        }
 
-/* Currency symbol styling */
-.currency-symbol {
-    color: #00ffc4;
-    font-weight: 600;
-    margin-right: 4px;
-}
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        .modal-body img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
 
-/* Apply to everything */
-* {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
-}
+        .modal-footer {
+            padding: 20px;
+            background: #0f1218;
+            border-top: 1px solid #00ffc4;
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
 
-/* Form group styles */
-.form-group {
-    margin-bottom: 20px;
-}
+        .download-btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #00ffc4, #00b8ff);
+            border: none;
+            border-radius: 8px;
+            color: #0a0c10;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
 
-.form-group label {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    font-weight: 500;
-    color: #c0c4cc;
-    margin-bottom: 8px;
-    display: block;
-    font-size: 14px;
-    letter-spacing: 0.3px;
-}
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,255,196,0.4);
+        }
 
-.form-group input {
-    width: 100%;
-    padding: 14px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
-    font-size: 15px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    transition: all 0.3s ease;
-}
+        .close-btn {
+            padding: 10px 24px;
+            background: rgba(255,70,70,0.9);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
 
-.form-group input:focus {
-    outline: none;
-    border-color: #00ffc4;
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 0 3px rgba(0, 255, 196, 0.1);
-}
+        .close-btn:hover {
+            background: #ff4646;
+            transform: translateY(-2px);
+        }
 
-.form-group input::placeholder {
-    color: #4a4f59;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
-    font-size: 14px;
-}
-/* Loading spinner for re-analyze */
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    margin: 20px auto;
-    border: 3px solid rgba(0, 255, 196, 0.3);
-    border-radius: 50%;
-    border-top-color: #00ffc4;
-    animation: spin 1s ease-in-out infinite;
-}
+        /* Form group styles for manual entry */
+        .form-group {
+            margin-bottom: 20px;
+        }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+        .form-group label {
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            color: #c0c4cc;
+            margin-bottom: 8px;
+            display: block;
+            font-size: 14px;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 3px solid rgba(0, 255, 196, 0.3);
+            border-radius: 50%;
+            border-top-color: #00ffc4;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        /* Dashboard Actions */
+        .dashboard-actions {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        /* Dashboard Stats Section Styles */
+        .dashboard-stats-section {
+            margin: 40px 0;
+            padding: 20px;
+            background: rgba(20, 24, 32, 0.5);
+            border-radius: 24px;
+            border: 1px solid rgba(0, 255, 196, 0.1);
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid rgba(0, 255, 196, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: #00ffc4;
+            box-shadow: 0 10px 30px rgba(0, 255, 196, 0.2);
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            background: rgba(0, 255, 196, 0.1);
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-label {
+            color: #8a8f99;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+            display: block;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .chart-box {
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid rgba(0, 255, 196, 0.2);
+            border-radius: 16px;
+            padding: 20px;
+            height: 350px;
+        }
+
+        .chart-box h3 {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-box h3 span {
+            color: #00ffc4;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+
+        .savings-section {
+            margin-top: 30px;
+        }
+
+        .savings-card {
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid rgba(0, 255, 196, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .savings-title {
+            color: white;
+            font-size: 18px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .progress-item {
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            color: #c0c4cc;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .progress-bar-bg {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ffc4, #00b8ff);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            color: #8a8f99;
+            font-size: 12px;
+        }
+
+        .savings-tip {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(0, 255, 196, 0.1);
+            border: 1px solid rgba(0, 255, 196, 0.2);
+            border-radius: 12px;
+            color: #00ffc4;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid rgba(0, 255, 196, 0.3);
+            border-radius: 30px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #00ffc4;
+            color: #0a0c10;
+            border-color: #00ffc4;
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 196, 0.3);
+        }
+
+        .month-selector {
+            padding: 10px 15px;
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid #00ffc4;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        .month-selector option {
+            background: #1a1e24;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -725,143 +925,29 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
+
     <!-- Image Preview Modal -->
-<div id="imageModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Document Preview</h3>
-            <span class="close-modal">&times;</span>
-        </div>
-        <div class="modal-body">
-            <img id="modalImage" src="" alt="Preview">
-            <div id="modalPdf" style="display: none;">
-                <embed id="pdfViewer" type="application/pdf" width="100%" height="500px">
+    <div id="imageModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Document Preview</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" src="" alt="Preview">
+                <div id="modalPdf" style="display: none;">
+                    <embed id="pdfViewer" type="application/pdf" width="100%" height="500px">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="downloadBtn" class="download-btn" download>⬇️ Download</a>
+                <button class="close-btn" onclick="closeModal()">✕ Close</button>
             </div>
         </div>
-        <div class="modal-footer">
-            <a id="downloadBtn" class="download-btn" download>⬇️ Download</a>
-            <button class="close-btn" onclick="closeModal()">✕ Close</button>
-        </div>
     </div>
-</div>
-
-<!-- Add modal styles -->
-<style>
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background: #1a1e24;
-    border: 1px solid #00ffc4;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,255,196,0.2);
-}
-
-.modal-header {
-    padding: 20px;
-    background: #0f1218;
-    border-bottom: 1px solid #00ffc4;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.modal-header h3 {
-    color: white;
-    margin: 0;
-    font-size: 20px;
-}
-
-.close-modal {
-    color: #8a8f99;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.close-modal:hover {
-    color: #00ffc4;
-}
-
-.modal-body {
-    padding: 20px;
-    max-height: 60vh;
-    overflow: auto;
-}
-
-.modal-body img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-}
-
-.modal-footer {
-    padding: 20px;
-    background: #0f1218;
-    border-top: 1px solid #00ffc4;
-    display: flex;
-    gap: 15px;
-    justify-content: flex-end;
-}
-
-.download-btn {
-    padding: 10px 24px;
-    background: linear-gradient(135deg, #00ffc4, #00b8ff);
-    border: none;
-    border-radius: 8px;
-    color: #0a0c10;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s;
-}
-
-.download-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,255,196,0.4);
-}
-
-.close-btn {
-    padding: 10px 24px;
-    background: rgba(255,70,70,0.9);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.close-btn:hover {
-    background: #ff4646;
-    transform: translateY(-2px);
-}
-</style>
-
-<script>
-function closeModal() {
-    document.getElementById('imageModal').style.display = 'none';
-    document.getElementById('modalImage').src = '';
-    document.getElementById('pdfViewer').src = '';
-}
-</script>
 
     <div class="container">
+        <!-- Header -->
         <div class="header">
             <div class="welcome">
                 <h1>Welcome back, {{ user_name }}! 👋</h1>
@@ -930,154 +1016,339 @@ function closeModal() {
             </button>
         </div>
         
-        <!-- Results Section -->
+        <!-- Results Section with Always Visible Manual Entry -->
         <div class="section" style="animation-delay: 0.2s">
             <h2 class="section-title">📊 Analysis Results</h2>
             <p class="section-desc">AI-extracted information from your documents</p>
             
-            <div class="results-placeholder">
-                <span style="font-size: 24px; display: block; margin-bottom: 10px;">📄</span>
-                No data yet. Upload a payslip to see results.
+            <!-- Results will be shown here when available -->
+            <div id="resultsContainer">
+                <div class="results-placeholder" id="defaultResults">
+                    <span style="font-size: 24px; display: block; margin-bottom: 10px;">📄</span>
+                    <p>No data yet. Upload a payslip to see results.</p>
+                </div>
             </div>
-
-        </div>
- <!-- Dashboard Actions -->
-<div class="dashboard-actions" style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-    <a href="/analytics" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;">
-        📊 View Your Financial Dashboard →
-        <span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">(Coming in Phase 5)</span>
-    </a>
-    
-    <a href="/tax-bot" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;">
-        💬 Chat with Tax Advisor →
-    </a>
-</div>
-<!-- Image Preview Modal -->
-<div id="imageModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Document Preview</h3>
-            <span class="close-modal">&times;</span>
-        </div>
-        <div class="modal-body">
-            <img id="modalImage" src="" alt="Preview">
-            <div id="modalPdf" style="display: none;">
-                <embed id="pdfViewer" type="application/pdf" width="100%" height="500px">
+            
+            <!-- Manual Entry Button - ALWAYS VISIBLE -->
+            <div style="margin-top: 30px; text-align: center;">
+                <button id="manualEntryMainBtn" class="secondary-btn" style="width: 100%; padding: 16px;">
+                    <span>✎</span> Enter Salary Details Manually
+                </button>
+                <p style="color: #8a8f99; font-size: 12px; margin-top: 8px;">
+                    Don't have a digital payslip? Enter your details manually.
+                </p>
             </div>
         </div>
-        <div class="modal-footer">
-            <a id="downloadBtn" class="download-btn" download>⬇️ Download</a>
-            <button class="close-btn" onclick="closeModal()">✕ Close</button>
+
+        <!-- PHASE 5 - FINANCIAL DASHBOARD SECTION -->
+        <div class="dashboard-stats-section" id="dashboard-section">
+            <h2 class="section-title">📊 Financial Overview</h2>
+            <p class="section-desc">Your tax savings at a glance</p>
+            
+            <!-- View Toggle and Month Selector -->
+            <div class="view-toggle-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <div class="view-toggle" style="display: flex; gap: 10px;">
+                    <button class="toggle-btn active" onclick="switchView('yearly')" id="yearlyViewBtn">📅 Yearly View</button>
+                    <button class="toggle-btn" onclick="switchView('monthly')" id="monthlyViewBtn">📆 Monthly View</button>
+                </div>
+                <div class="month-selector-wrapper" id="monthSelectorWrapper" style="display: none;">
+                    <select id="monthSelect" class="month-selector" onchange="loadMonthData(this.value)">
+                        <option value="">Select a month</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <span class="stat-label">Total Income</span>
+                        <span class="stat-value" id="totalIncome">₹0</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <span class="stat-label">Tax Paid</span>
+                        <span class="stat-value" id="totalTax">₹0</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">💸</div>
+                    <div class="stat-content">
+                        <span class="stat-label">Tax Saved</span>
+                        <span class="stat-value" id="taxSaved">₹0</span>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-content">
+                        <span class="stat-label">Months Tracked</span>
+                        <span class="stat-value" id="monthsTracked">0/12</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-box">
+                    <h3><span>📈</span> Income Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="incomeChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h3><span>🥧</span> Tax Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="taxChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Savings Progress -->
+            <div class="savings-section">
+                <div class="savings-card">
+                    <h3 class="savings-title"><span>💰</span> Tax Savings Progress</h3>
+                    
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span>Section 80C (Max ₹1.5L)</span>
+                            <span id="invested80C">₹0</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="progress80C" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span>Invested</span>
+                            <span>Target: ₹1,50,000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-item">
+                        <div class="progress-header">
+                            <span>Section 80D (Max ₹25k)</span>
+                            <span id="invested80D">₹0</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="progress80D" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span>Invested</span>
+                            <span>Target: ₹25,000</span>
+                        </div>
+                    </div>
+                    
+                    <div class="savings-tip" id="savingsTip">
+                        💡 Upload more payslips to see tax-saving tips!
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-
-<style>
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.modal-content {
-    background: #1a1e24;
-    border: 1px solid #00ffc4;
-    border-radius: 16px;
-    width: 90%;
-    max-width: 800px;
-    max-height: 90vh;
-    overflow: hidden;
-    box-shadow: 0 20px 40px rgba(0,255,196,0.2);
-}
-.modal-header {
-    padding: 20px;
-    background: #0f1218;
-    border-bottom: 1px solid #00ffc4;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.modal-header h3 {
-    color: white;
-    margin: 0;
-    font-size: 20px;
-}
-.close-modal {
-    color: #8a8f99;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: color 0.3s;
-}
-.close-modal:hover {
-    color: #00ffc4;
-}
-.modal-body {
-    padding: 20px;
-    max-height: 60vh;
-    overflow: auto;
-}
-.modal-body img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-}
-.modal-footer {
-    padding: 20px;
-    background: #0f1218;
-    border-top: 1px solid #00ffc4;
-    display: flex;
-    gap: 15px;
-    justify-content: flex-end;
-}
-.download-btn {
-    padding: 10px 24px;
-    background: linear-gradient(135deg, #00ffc4, #00b8ff);
-    border: none;
-    border-radius: 8px;
-    color: #0a0c10;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: all 0.3s;
-}
-.download-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,255,196,0.4);
-}
-.close-btn {
-    padding: 10px 24px;
-    background: rgba(255,70,70,0.9);
-    border: none;
-    border-radius: 8px;
-    color: white;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-.close-btn:hover {
-    background: #ff4646;
-    transform: translateY(-2px);
-}
-</style>
-
-<script>
-function closeModal() {
-    document.getElementById('imageModal').style.display = 'none';
-    document.getElementById('modalImage').src = '';
-    document.getElementById('pdfViewer').src = '';
-}
-</script>
         
-       
+        <!-- Dashboard Actions -->
+        <div class="dashboard-actions">
+            <a href="javascript:void(0);" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;" onclick="toggleDashboard()">
+                📊 View Your Financial Dashboard →
+                <span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to view ✨</span>
+            </a>
+            
+            <a href="/tax-bot" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;">
+                💬 Chat with Tax Advisor →
+            </a>
+        </div>
     </div>
 
+    <script>
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            document.getElementById('modalImage').src = '';
+            document.getElementById('pdfViewer').src = '';
+        }
+        
+        function toggleDashboard() {
+            const dashboardSection = document.getElementById('dashboard-section');
+            const viewButton = document.querySelector('.dashboard-actions a:first-child');
+            
+            if (dashboardSection.style.display === 'none' || dashboardSection.style.display === '') {
+                // Show dashboard
+                dashboardSection.style.display = 'block';
+                viewButton.innerHTML = '📊 Hide Financial Dashboard ←<span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to hide ✨</span>';
+                dashboardSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                // Hide dashboard
+                dashboardSection.style.display = 'none';
+                viewButton.innerHTML = '📊 View Your Financial Dashboard →<span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to view ✨</span>';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        // Hide dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const dashboardSection = document.getElementById('dashboard-section');
+            dashboardSection.style.display = 'none';
+        });
+
+        // View toggle functions
+        function switchView(view) {
+            const yearlyBtn = document.getElementById('yearlyViewBtn');
+            const monthlyBtn = document.getElementById('monthlyViewBtn');
+            const monthSelector = document.getElementById('monthSelectorWrapper');
+            
+            if (view === 'yearly') {
+                yearlyBtn.classList.add('active');
+                monthlyBtn.classList.remove('active');
+                monthSelector.style.display = 'none';
+                // Load yearly data
+                if (typeof window.loadDashboardData === 'function') {
+                    window.loadDashboardData();
+                }
+            } else {
+                monthlyBtn.classList.add('active');
+                yearlyBtn.classList.remove('active');
+                monthSelector.style.display = 'block';
+                // Load months list
+                loadMonthsList();
+            }
+        }
+        
+        async function loadMonthsList() {
+            try {
+                const response = await fetch('/api/months-list');
+                const data = await response.json();
+                
+                const select = document.getElementById('monthSelect');
+                select.innerHTML = '<option value="">Select a month</option>';
+                
+                if (data.success && data.months.length > 0) {
+                    data.months.forEach(month => {
+                        const option = document.createElement('option');
+                        option.value = month;
+                        option.textContent = month;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading months:', error);
+            }
+        }
+        
+        async function loadMonthData(month) {
+            if (!month) return;
+            
+            try {
+                const response = await fetch(`/api/monthly-data/${encodeURIComponent(month)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update dashboard with month data
+                    document.getElementById('totalIncome').textContent = '₹' + (data.data.income || 0).toLocaleString('en-IN');
+                    document.getElementById('totalTax').textContent = '₹' + (data.data.tax_paid || 0).toLocaleString('en-IN');
+                    document.getElementById('monthsTracked').textContent = month;
+                    // Update charts for month
+                    if (typeof window.updateChartsForMonth === 'function') {
+                        window.updateChartsForMonth(data.data, month);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading month data:', error);
+            }
+        }
+
+        // Manual entry button for main page
+        document.getElementById('manualEntryMainBtn')?.addEventListener('click', function() {
+            const resultsSection = document.querySelector('.section:nth-child(3)');
+            if (!resultsSection) return;
+            
+            resultsSection.querySelector('#resultsContainer').innerHTML = `
+                <div class="manual-form">
+                    <h3 style="color: white; margin-bottom: 20px;">✎ Enter Your Salary Details</h3>
+                    <div class="form-group">
+                        <label style="color: #c0c4cc;">👤 Employee Name</label>
+                        <input type="text" id="manualName" class="result-input" placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #c0c4cc;">💰 Monthly Income (₹)</label>
+                        <input type="number" id="manualIncome" class="result-input" placeholder="Enter amount">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #c0c4cc;">🏢 Employer</label>
+                        <input type="text" id="manualEmployer" class="result-input" placeholder="Enter company name">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #c0c4cc;">📅 Pay Date</label>
+                        <input type="text" id="manualDate" class="result-input" placeholder="DD-MM-YYYY">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #c0c4cc;">💸 Total Deductions (₹)</label>
+                        <input type="number" id="manualDeductions" class="result-input" placeholder="Enter amount">
+                    </div>
+                    <div class="form-group">
+                        <label style="color: #c0c4cc;">✅ Net Pay (₹)</label>
+                        <input type="number" id="manualNetPay" class="result-input" placeholder="Enter amount">
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-top: 20px;">
+                        <button id="saveMainManualBtn" class="primary-btn" style="flex: 1;">✓ Save Entry</button>
+                        <button id="cancelMainManualBtn" class="secondary-btn" style="flex: 1;">✕ Cancel</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('saveMainManualBtn')?.addEventListener('click', saveManualEntry);
+            document.getElementById('cancelMainManualBtn')?.addEventListener('click', cancelManualEntry);
+        });
+        
+        function saveManualEntry() {
+            const manualData = {
+                name: document.getElementById('manualName')?.value,
+                income: document.getElementById('manualIncome')?.value,
+                employer: document.getElementById('manualEmployer')?.value,
+                date: document.getElementById('manualDate')?.value,
+                deductions: document.getElementById('manualDeductions')?.value,
+                net_pay: document.getElementById('manualNetPay')?.value
+            };
+            
+            if (!manualData.name || !manualData.income || !manualData.employer) {
+                alert('❌ Please fill in all required fields (Name, Income, Employer)');
+                return;
+            }
+            
+            fetch('/api/save-monthly-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(manualData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('✅ Data saved successfully!');
+                    location.reload();
+                } else {
+                    alert('❌ Error saving data: ' + (result.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Network error. Please try again.');
+            });
+        }
+        
+        function cancelManualEntry() {
+            document.querySelector('#resultsContainer').innerHTML = `
+                <div class="results-placeholder">
+                    <span style="font-size: 24px; display: block; margin-bottom: 10px;">📄</span>
+                    <p>No data yet. Upload a payslip to see results.</p>
+                </div>
+            `;
+        }
+    </script>
+    
+    <!-- Add Chart.js and dashboard files -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard-stats.js') }}"></script>
 </body>
 </html>

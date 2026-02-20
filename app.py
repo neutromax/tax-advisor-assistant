@@ -43,11 +43,273 @@ google = oauth.register(
 # Login attempts tracking
 login_attempts = {}
 
+# ========== HELPER FUNCTIONS ==========
+def safe_float(value):
+    """Safely convert any value to float"""
+    try:
+        if value is None:
+            return 0.0
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            # Remove commas and convert
+            value = value.replace(',', '').strip()
+            return float(value) if value else 0.0
+        return 0.0
+    except (ValueError, TypeError, AttributeError):
+        return 0.0
+
+def calculate_trend(incomes):
+    """Calculate percentage trend in income"""
+    if len(incomes) < 2:
+        return 0
+    first_avg = sum(incomes[:3]) / min(3, len(incomes))
+    last_avg = sum(incomes[-3:]) / min(3, len(incomes))
+    if first_avg == 0:
+        return 0
+    return round(((last_avg - first_avg) / first_avg) * 100)
+
+# ========== HOME ROUTE ==========
 @app.route('/')
 def index():
     if 'user_email' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
+
+# ========== PHASE 5 - FINANCIAL DASHBOARD API ==========
+@app.route('/api/financial-summary')
+def financial_summary():
+    if 'user_email' not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    try:
+        user_email = session['user_email']
+        
+        # Get real user data from database
+        monthly_data = db.get_user_monthly_data(user_email)
+        yearly_summary = db.get_user_yearly_summary(user_email)
+        
+        if not monthly_data:
+            # Return empty data if no records exist
+            return jsonify({
+                "success": True,
+                "summary": {
+                    "totalIncome": 0,
+                    "totalTax": 0,
+                    "taxSaved": 0,
+                    "monthsTracked": 0,
+                    "trend": 0
+                },
+                "monthlyData": {
+                    "months": [],
+                    "incomes": [],
+                    "takeHome": 0,
+                    "tds": 0,
+                    "pf": 0,
+                    "otherDeductions": 0
+                },
+                "savings": {
+                    "invested80C": 0,
+                    "invested80D": 0
+                }
+            })
+        
+        # Prepare monthly data for charts
+        months_list = []
+        incomes_list = []
+        total_take_home = 0
+        total_tds = 0
+        total_pf = 0
+        total_other = 0
+        total_80c = 0
+        total_80d = 0
+        
+        for month_key, data in monthly_data.items():
+            months_list.append(month_key)
+            
+            # SAFELY convert to float using safe_float
+            income = safe_float(data.get('income', 0))
+            net_pay = safe_float(data.get('net_pay', 0))
+            tax_paid = safe_float(data.get('tax_paid', 0))
+            deductions = safe_float(data.get('deductions', 0))
+            
+            incomes_list.append(income)
+            total_take_home += net_pay
+            total_tds += tax_paid
+            
+            # Safely calculate PF and other deductions
+            if deductions > 0:
+                total_pf += deductions * 0.6  # Approx PF portion
+                total_other += deductions * 0.4  # Other deductions
+            
+            # Investment tracking
+            investments = data.get('investments', {})
+            total_80c += (
+                safe_float(investments.get('ppf', 0)) + 
+                safe_float(investments.get('elss', 0)) + 
+                safe_float(investments.get('life_insurance', 0))
+            )
+            
+            insurance = data.get('insurance', {})
+            total_80d += (
+                safe_float(insurance.get('self', 0)) + 
+                safe_float(insurance.get('parents', 0))
+            )
+        
+        summary = {
+            "totalIncome": safe_float(yearly_summary.get('total_income', 0)),
+            "totalTax": total_tds,
+            "taxSaved": total_80c + total_80d,
+            "monthsTracked": yearly_summary.get('months_tracked', 0),
+            "trend": calculate_trend(incomes_list) if len(incomes_list) > 1 else 0
+        }
+        
+        monthly_data_response = {
+            "months": months_list,
+            "incomes": incomes_list,
+            "takeHome": total_take_home,
+            "tds": total_tds,
+            "pf": total_pf,
+            "otherDeductions": total_other
+        }
+        
+        savings = {
+            "invested80C": total_80c,
+            "invested80D": total_80d
+        }
+        
+        return jsonify({
+            "success": True,
+            "summary": summary,
+            "monthlyData": monthly_data_response,
+            "savings": savings
+        })
+        
+    except Exception as e:
+        print(f"❌ Dashboard error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ========== SAVE PAYSLIP DATA ==========
+@app.route('/api/save-monthly-data', methods=['POST'])
+def save_monthly_data():
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        data = request.json
+        user_email = session['user_email']
+        
+        # Extract month from date
+        date_str = data.get('date', '')
+        month_key = extract_month_from_date(date_str)
+        
+        if not month_key:
+            return jsonify({"success": False, "error": "Could not determine month"}), 400
+        
+        # Prepare monthly record - CONVERT TO FLOAT SAFELY
+        deductions_val = safe_float(data.get('deductions', 0))
+        
+        month_data = {
+            "month": month_key,
+            "income": safe_float(data.get('income', 0)),
+            "employer": data.get('employer', ''),
+            "date": date_str,
+            "deductions": deductions_val,
+            "net_pay": safe_float(data.get('net_pay', 0)),
+            "hra": {},
+            "investments": {},
+            "insurance": {},
+            "tax_paid": deductions_val * 0.3  # Approx tax portion
+        }
+        
+        print(f"💾 Saving month: {month_key} with data: {month_data}")
+        
+        # Save to database
+        success, message = db.save_monthly_record(user_email, month_data)
+        
+        if success:
+            return jsonify({"success": True, "message": "Data saved successfully"})
+        else:
+            return jsonify({"success": False, "error": message}), 500
+            
+    except Exception as e:
+        print(f"❌ Save error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+def extract_month_from_date(date_str):
+    """Convert date string to month key (e.g., 'April 2024')"""
+    try:
+        if not date_str:
+            return None
+            
+        # Try to parse date formats
+        months = {
+            "01": "January", "02": "February", "03": "March", "04": "April",
+            "05": "May", "06": "June", "07": "July", "08": "August",
+            "09": "September", "10": "October", "11": "November", "12": "December"
+        }
+        
+        # Check if it's already in "Month YYYY" format
+        month_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_str)
+        if month_match:
+            month_name = month_match.group(1)
+            year = month_match.group(2)
+            print(f"✅ Extracted month from text: {month_name} {year}")
+            return f"{month_name} {year}"
+        
+        # Check for DD/MM/YYYY format
+        date_match = re.search(r'(\d{2})[/-](\d{2})[/-](\d{4})', date_str)
+        if date_match:
+            day = date_match.group(1)
+            month_num = date_match.group(2)
+            year = date_match.group(3)
+            if month_num in months:
+                month_name = months[month_num]
+                print(f"✅ Extracted month from date: {month_name} {year}")
+                return f"{month_name} {year}"
+        
+        print(f"❌ Could not extract month from: {date_str}")
+        return None
+    except Exception as e:
+        print(f"❌ Month extraction error: {str(e)}")
+        return None
+
+# ========== GET MONTHLY DATA FOR CHATBOT ==========
+@app.route('/api/monthly-data/<month>')
+def get_monthly_data(month):
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        user_email = session['user_email']
+        data = db.get_user_monthly_data(user_email, month)
+        
+        if data:
+            return jsonify({"success": True, "data": data})
+        else:
+            return jsonify({"success": False, "error": "Month not found"}), 404
+            
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ========== GET ALL MONTHS LIST ==========
+@app.route('/api/months-list')
+def get_months_list():
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        user_email = session['user_email']
+        months = db.get_all_months_list(user_email)
+        return jsonify({"success": True, "months": months})
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
 
 # ========== OCR.SPACE PAYSLIP ANALYSIS ==========
 @app.route('/analyze-payslip', methods=['POST'])
@@ -80,7 +342,7 @@ def analyze_payslip():
                 'isOverlayRequired': False,
                 'detectOrientation': True,
                 'scale': True,
-                'OCREngine': '2'  # Engine 2 is better for printed text
+                'OCREngine': '2'
             },
             files={'file': ('payslip.jpg', image_bytes)}
         )
@@ -112,7 +374,7 @@ def analyze_payslip():
         return jsonify({"success": False, "error": str(e)}), 500
 
 def parse_payslip_text(text):
-    """Extract structured data from raw OCR text with improved patterns for this payslip format"""
+    """Extract structured data from raw OCR text"""
     
     print("🔍 Parsing payslip text...")
     
@@ -129,56 +391,52 @@ def parse_payslip_text(text):
     # Clean up text - remove extra spaces and newlines for better matching
     text = re.sub(r'\s+', ' ', text)
     
-    # Extract Employer (Company name at top)
+    # Extract Employer
     employer_match = re.search(r'(Computer\s*Solutions\s*Pvt\.?\s*Ltd\.?)', text, re.IGNORECASE)
     if employer_match:
         result["employer"] = employer_match.group(1).strip()
     
-    # Extract Employee Name - Look for patterns like "Name : John S" or after Employee Id section
+    # Extract Employee Name
     name_match = re.search(r'Name\s*:?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]?\.?)?)', text, re.IGNORECASE)
     if name_match:
         result["name"] = name_match.group(1).strip()
     else:
-        # Try alternative: Look for name in the employee details section
         name_match = re.search(r'Employee Id\s*\|\s*Department\s*\|\s*Name\s*\|\s*([A-Z][a-z]+\s+[A-Z][a-z]?\.?)', text, re.IGNORECASE)
         if name_match:
             result["name"] = name_match.group(1).strip()
     
-    # Extract Date - Look for "February 2011" format
+    # Extract Date
     date_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', text, re.IGNORECASE)
     if date_match:
         result["date"] = f"{date_match.group(1)} {date_match.group(2)}"
     else:
-        # Try MM/DD/YYYY format
         date_match = re.search(r'(\d{2}[/-]\d{2}[/-]\d{4})', text)
         if date_match:
             result["date"] = date_match.group(1)
     
     # Extract Total Earnings (Income)
-    # First try "Total Earnings" pattern
     income_match = re.search(r'Total\s*Earnings[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
     if income_match:
         result["income"] = float(income_match.group(1).replace(',', ''))
     else:
-        # Sum up individual earnings
         earnings = re.findall(r'(?:Basic Pay|Dearness Allowance|Conveyance Allowance|Medical Allowance|House Rent Allowance|Food Allowance)[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
         if earnings:
             total = sum(float(e.replace(',', '')) for e in earnings)
             result["income"] = total
     
-    # Extract Deductions - Look for Total Deductions
+    # Extract Deductions
     deductions_match = re.search(r'Total\s*Deductions[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
     if deductions_match:
         result["deductions"] = float(deductions_match.group(1).replace(',', ''))
     
-    # Extract Net Pay - Look for Net Pay
+    # Extract Net Pay
     net_pay_match = re.search(r'Net\s*Pay[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
     if net_pay_match:
         result["net_pay"] = float(net_pay_match.group(1).replace(',', ''))
     
     # Clean up any unreasonable values
     for field in ["income", "deductions", "net_pay"]:
-        if result[field] and result[field] > 1000000:  # If > 10 lakhs, probably wrong
+        if result[field] and result[field] > 1000000:
             result[field] = None
     
     print(f"✅ Parsed result: {result}")
@@ -190,8 +448,9 @@ def google_login():
     state = generate_token()
     session['google_state'] = state
     
+    
     # Replace with your actual Codespaces URL
-    redirect_uri = "https://musical-parakeet-97jr57xp5r552wrp-5000.app.github.dev/google/auth"
+    redirect_uri = "https://animated-telegram-5gxjrg9w5qx72v6wq-5000.app.github.dev/google/auth"
     
     return google.authorize_redirect(redirect_uri, state=state)
 
@@ -349,7 +608,7 @@ def test_ocr():
     return "✅ OCR.space API key is configured!"
 
 if __name__ == '__main__':
-    print("🚀 Tax Advisor - Phase 4 with OCR.space")
+    print("🚀 Tax Advisor - Phase 5 with Financial Dashboard")
     print(f"OCR.space API Key: {'✅ Configured' if OCR_SPACE_API_KEY else '❌ Not configured'}")
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
