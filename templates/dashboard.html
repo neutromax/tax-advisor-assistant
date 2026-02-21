@@ -1193,27 +1193,29 @@
         });
 
         // View toggle functions
-        function switchView(view) {
-            const yearlyBtn = document.getElementById('yearlyViewBtn');
-            const monthlyBtn = document.getElementById('monthlyViewBtn');
-            const monthSelector = document.getElementById('monthSelectorWrapper');
-            
-            if (view === 'yearly') {
-                yearlyBtn.classList.add('active');
-                monthlyBtn.classList.remove('active');
-                monthSelector.style.display = 'none';
-                // Load yearly data
-                if (typeof window.loadDashboardData === 'function') {
-                    window.loadDashboardData();
-                }
-            } else {
-                monthlyBtn.classList.add('active');
-                yearlyBtn.classList.remove('active');
-                monthSelector.style.display = 'block';
-                // Load months list
-                loadMonthsList();
-            }
+function switchView(view) {
+    const yearlyBtn = document.getElementById('yearlyViewBtn');
+    const monthlyBtn = document.getElementById('monthlyViewBtn');
+    const monthSelector = document.getElementById('monthSelectorWrapper');
+    
+    if (view === 'yearly') {
+        yearlyBtn.classList.add('active');
+        monthlyBtn.classList.remove('active');
+        monthSelector.style.display = 'none';
+        // Load yearly data and refresh charts
+        if (typeof window.loadYearlyData === 'function') {
+            window.loadYearlyData();
+        } else if (typeof window.loadDashboardData === 'function') {
+            window.loadDashboardData();
         }
+    } else {
+        monthlyBtn.classList.add('active');
+        yearlyBtn.classList.remove('active');
+        monthSelector.style.display = 'block';
+        // Load months list
+        loadMonthsList();
+    }
+}
         
         async function loadMonthsList() {
             try {
