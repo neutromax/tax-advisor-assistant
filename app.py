@@ -6,6 +6,7 @@ import base64
 import io
 import json
 from dotenv import load_dotenv
+from datetime import datetime
 from database import db
 from authlib.integrations.flask_client import OAuth
 from authlib.common.security import generate_token
@@ -606,6 +607,135 @@ def test_ocr():
     if not OCR_SPACE_API_KEY:
         return "❌ OCR.space API key not configured in .env"
     return "✅ OCR.space API key is configured!"
+@app.route('/tax-analyzer')
+def tax_analyzer():
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+    return render_template('tax-analyzer.html')
+# ========== PHASE 6 - TAX ANALYZER API ==========
+
+@app.route('/api/month-tax/<month>')
+def get_month_tax(month):
+    """Get saved tax calculation for a month"""
+    if 'user_email' not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    try:
+        user_email = session['user_email']
+        
+        # Get user's monthly data
+        month_data = db.get_user_monthly_data(user_email, month)
+        
+        if not month_data:
+            return jsonify({"success": False, "error": "Month not found"}), 404
+        
+        # Check if tax calculation exists
+        tax_data = month_data.get('tax_analysis', {})
+        
+        if tax_data and tax_data.get('status') == 'completed':
+            return jsonify({
+                "success": True,
+                "has_data": True,
+                "data": tax_data
+            })
+        else:
+            return jsonify({
+                "success": True,
+                "has_data": False,
+                "income": month_data.get('income', 0)
+            })
+            
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/calculate-tax', methods=['POST'])
+def calculate_tax():
+    """Calculate and save tax for a month"""
+    if 'user_email' not in session:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    
+    try:
+        data = request.json
+        month = data.get('month')
+        answers = data.get('answers', {})
+        income = data.get('income', 0)
+        
+        user_email = session['user_email']
+        
+        # Calculate refunds
+        results = calculate_tax_refund(income, answers)
+        
+        # Save to database
+        save_tax_calculation(user_email, month, answers, results)
+        
+        return jsonify({
+            "success": True,
+            "results": results
+        })
+        
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+def calculate_tax_refund(income, answers):
+    """Calculate potential tax refund based on answers"""
+    results = {
+        "hra": 0,
+        "section_80c": 0,
+        "section_80d": 0,
+        "total_refund": 0
+    }
+    
+    # HRA Calculation (simplified)
+    rent = answers.get('rent_paid', 0)
+    if rent > 0:
+        # Approx 30% of rent can be refunded
+        results['hra'] = round(rent * 0.3)
+    
+    # 80C Calculation
+    total_80c = (answers.get('ppf', 0) + 
+                 answers.get('elss', 0))
+    if total_80c > 0:
+        results['section_80c'] = round(total_80c * 0.3)
+    
+    # 80D Calculation
+    insurance = answers.get('insurance', 0)
+    if insurance > 0:
+        results['section_80d'] = round(insurance * 0.3)
+    
+    # Total refund
+    results['total_refund'] = (results['hra'] + 
+                               results['section_80c'] + 
+                               results['section_80d'])
+    
+    return results
+
+
+def save_tax_calculation(user_email, month, answers, results):
+    """Save tax calculation to database"""
+    data = db._load()
+    
+    if user_email not in data["users"]:
+        return
+    
+    if "financial_data" not in data["users"][user_email]:
+        data["users"][user_email]["financial_data"] = {}
+    
+    if month not in data["users"][user_email]["financial_data"]:
+        data["users"][user_email]["financial_data"][month] = {}
+    
+    # Add tax analysis
+    data["users"][user_email]["financial_data"][month]["tax_analysis"] = {
+        "status": "completed",
+        "last_calculated": datetime.now().isoformat(),
+        "answers": answers,
+        "results": results
+    }
+    
+    db._save(data)
 
 if __name__ == '__main__':
     print("🚀 Tax Advisor - Phase 5 with Financial Dashboard")
