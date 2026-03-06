@@ -68,7 +68,24 @@
             "parents": 0
           },
           "tax_paid": 750.0,
-          "timestamp": "2026-02-20T08:55:35.559254"
+          "timestamp": "2026-02-20T08:55:35.559254",
+          "tax_analysis": {
+            "status": "completed",
+            "last_calculated": "2026-03-06T04:49:36.865506",
+            "answers": {
+              "ppf": 1000,
+              "elss": 500,
+              "insurance": 2000,
+              "rent_paid": 3000,
+              "home_loan": 0
+            },
+            "results": {
+              "hra": 900,
+              "section_80c": 450,
+              "section_80d": 600,
+              "total_refund": 1950
+            }
+          }
         },
         "April 2026": {
           "income": 50000.0,

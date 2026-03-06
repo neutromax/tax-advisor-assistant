@@ -902,6 +902,22 @@
             box-shadow: 0 5px 15px rgba(0, 255, 196, 0.3);
         }
 
+        .year-selector {
+            padding: 10px 15px;
+            background: rgba(20, 24, 32, 0.95);
+            border: 1px solid #00ffc4;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 180px;
+        }
+        
+        .year-selector option {
+            background: #1a1e24;
+            color: white;
+        }
+
         .month-selector {
             padding: 10px 15px;
             background: rgba(20, 24, 32, 0.95);
@@ -1045,13 +1061,20 @@
             <h2 class="section-title">📊 Financial Overview</h2>
             <p class="section-desc">Your tax savings at a glance</p>
             
-            <!-- View Toggle and Month Selector -->
-            <div class="view-toggle-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-                <div class="view-toggle" style="display: flex; gap: 10px;">
+            <!-- UPDATED: View Toggle with Year and Month Selectors -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; gap: 10px;">
                     <button class="toggle-btn active" onclick="switchView('yearly')" id="yearlyViewBtn">📅 Yearly View</button>
                     <button class="toggle-btn" onclick="switchView('monthly')" id="monthlyViewBtn">📆 Monthly View</button>
                 </div>
-                <div class="month-selector-wrapper" id="monthSelectorWrapper" style="display: none;">
+                
+                <!-- Year Selector - ALWAYS VISIBLE -->
+                <select id="yearSelector" class="year-selector" onchange="changeYear(this.value)">
+                    <option value="">All Financial Years</option>
+                </select>
+                
+                <!-- Month Selector - VISIBLE ONLY IN MONTHLY VIEW -->
+                <div id="monthSelectorWrapper" style="display: none;">
                     <select id="monthSelect" class="month-selector" onchange="loadMonthData(this.value)">
                         <option value="">Select a month</option>
                     </select>
@@ -1112,35 +1135,39 @@
             <!-- Savings Progress -->
             <div class="savings-section">
                 <div class="savings-card">
-                    <h3 class="savings-title"><span>💰</span> Tax Savings Progress</h3>
-                    
-                    <div class="progress-item">
-                        <div class="progress-header">
-                            <span>Section 80C (Max ₹1.5L)</span>
-                            <span id="invested80C">₹0</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" id="progress80C" style="width: 0%"></div>
-                        </div>
-                        <div class="progress-stats">
-                            <span>Invested</span>
-                            <span>Target: ₹1,50,000</span>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-item">
-                        <div class="progress-header">
-                            <span>Section 80D (Max ₹25k)</span>
-                            <span id="invested80D">₹0</span>
-                        </div>
-                        <div class="progress-bar-bg">
-                            <div class="progress-bar-fill" id="progress80D" style="width: 0%"></div>
-                        </div>
-                        <div class="progress-stats">
-                            <span>Invested</span>
-                            <span>Target: ₹25,000</span>
-                        </div>
-                    </div>
+                
+
+<h3 class="savings-title"><span>💰</span> Tax Savings Progress</h3>
+
+<!-- 80C Section -->
+<div class="progress-item">
+    <div class="progress-header">
+        <span>Section 80C (Max Refund ₹45,000)</span>
+        <span class="refund-amount" id="refund80C">₹3,150</span>
+    </div>
+    <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress80C" style="width: 7%"></div>
+    </div>
+    <div class="progress-stats">
+        <span>Invested: <span id="invested80C">₹10,500</span></span>
+        <span>Refund: ₹3,150 (7% of max)</span>
+    </div>
+</div>
+
+<!-- 80D Section -->
+<div class="progress-item">
+    <div class="progress-header">
+        <span>Section 80D (Max Refund ₹7,500)</span>
+        <span class="refund-amount" id="refund80D">₹2,100</span>
+    </div>
+    <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress80D" style="width: 28%"></div>
+    </div>
+    <div class="progress-stats">
+        <span>Invested: <span id="invested80D">₹7,000</span></span>
+        <span>Refund: ₹2,100 (28% of max)</span>
+    </div>
+</div>
                     
                     <div class="savings-tip" id="savingsTip">
                         💡 Upload more payslips to see tax-saving tips!
@@ -1150,204 +1177,137 @@
         </div>
         
        <!-- Dashboard Actions -->
-<div class="dashboard-actions">
-    <a href="javascript:void(0);" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;" onclick="toggleDashboard()">
-        📊 View Your Financial Dashboard →
-        <span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to view ✨</span>
-    </a>
-    
-    <!-- THIS MUST BE HERE - pointing to /tax-analyzer -->
-    <a href="/tax-analyzer" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;">
-        🔍 Tax Savings Analyzer →
-        <span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Find missed deductions ✨</span>
-    </a>
-</div>
-
-    <script>
-        function closeModal() {
-            document.getElementById('imageModal').style.display = 'none';
-            document.getElementById('modalImage').src = '';
-            document.getElementById('pdfViewer').src = '';
-        }
-        
-        function toggleDashboard() {
-            const dashboardSection = document.getElementById('dashboard-section');
-            const viewButton = document.querySelector('.dashboard-actions a:first-child');
+        <div class="dashboard-actions">
+            <a href="javascript:void(0);" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;" onclick="toggleDashboard()">
+                📊 View Your Financial Dashboard →
+                <span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to view ✨</span>
+            </a>
             
-            if (dashboardSection.style.display === 'none' || dashboardSection.style.display === '') {
-                // Show dashboard
-                dashboardSection.style.display = 'block';
-                viewButton.innerHTML = '📊 Hide Financial Dashboard ←<span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to hide ✨</span>';
-                dashboardSection.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                // Hide dashboard
-                dashboardSection.style.display = 'none';
-                viewButton.innerHTML = '📊 View Your Financial Dashboard →<span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to view ✨</span>';
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+            <!-- THIS MUST BE HERE - pointing to /tax-analyzer -->
+            <a href="/tax-analyzer" class="nav-link" style="flex: 1; min-width: 250px; text-align: center;">
+                🔍 Tax Savings Analyzer →
+                <span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Find missed deductions ✨</span>
+            </a>
+        </div>
+
+        <script>
+            function closeModal() {
+                document.getElementById('imageModal').style.display = 'none';
+                document.getElementById('modalImage').src = '';
+                document.getElementById('pdfViewer').src = '';
             }
-        }
-
-        // Hide dashboard when page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            const dashboardSection = document.getElementById('dashboard-section');
-            dashboardSection.style.display = 'none';
-        });
-
-        // View toggle functions
-function switchView(view) {
-    const yearlyBtn = document.getElementById('yearlyViewBtn');
-    const monthlyBtn = document.getElementById('monthlyViewBtn');
-    const monthSelector = document.getElementById('monthSelectorWrapper');
-    
-    if (view === 'yearly') {
-        yearlyBtn.classList.add('active');
-        monthlyBtn.classList.remove('active');
-        monthSelector.style.display = 'none';
-        // Load yearly data and refresh charts
-        if (typeof window.loadYearlyData === 'function') {
-            window.loadYearlyData();
-        } else if (typeof window.loadDashboardData === 'function') {
-            window.loadDashboardData();
-        }
-    } else {
-        monthlyBtn.classList.add('active');
-        yearlyBtn.classList.remove('active');
-        monthSelector.style.display = 'block';
-        // Load months list
-        loadMonthsList();
-    }
-}
-        
-        async function loadMonthsList() {
-            try {
-                const response = await fetch('/api/months-list');
-                const data = await response.json();
+            
+            function toggleDashboard() {
+                const dashboardSection = document.getElementById('dashboard-section');
+                const viewButton = document.querySelector('.dashboard-actions a:first-child');
                 
-                const select = document.getElementById('monthSelect');
-                select.innerHTML = '<option value="">Select a month</option>';
-                
-                if (data.success && data.months.length > 0) {
-                    data.months.forEach(month => {
-                        const option = document.createElement('option');
-                        option.value = month;
-                        option.textContent = month;
-                        select.appendChild(option);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading months:', error);
-            }
-        }
-        
-        async function loadMonthData(month) {
-            if (!month) return;
-            
-            try {
-                const response = await fetch(`/api/monthly-data/${encodeURIComponent(month)}`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Update dashboard with month data
-                    document.getElementById('totalIncome').textContent = '₹' + (data.data.income || 0).toLocaleString('en-IN');
-                    document.getElementById('totalTax').textContent = '₹' + (data.data.tax_paid || 0).toLocaleString('en-IN');
-                    document.getElementById('monthsTracked').textContent = month;
-                    // Update charts for month
-                    if (typeof window.updateChartsForMonth === 'function') {
-                        window.updateChartsForMonth(data.data, month);
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading month data:', error);
-            }
-        }
-
-        // Manual entry button for main page
-        document.getElementById('manualEntryMainBtn')?.addEventListener('click', function() {
-            const resultsSection = document.querySelector('.section:nth-child(3)');
-            if (!resultsSection) return;
-            
-            resultsSection.querySelector('#resultsContainer').innerHTML = `
-                <div class="manual-form">
-                    <h3 style="color: white; margin-bottom: 20px;">✎ Enter Your Salary Details</h3>
-                    <div class="form-group">
-                        <label style="color: #c0c4cc;">👤 Employee Name</label>
-                        <input type="text" id="manualName" class="result-input" placeholder="Enter full name">
-                    </div>
-                    <div class="form-group">
-                        <label style="color: #c0c4cc;">💰 Monthly Income (₹)</label>
-                        <input type="number" id="manualIncome" class="result-input" placeholder="Enter amount">
-                    </div>
-                    <div class="form-group">
-                        <label style="color: #c0c4cc;">🏢 Employer</label>
-                        <input type="text" id="manualEmployer" class="result-input" placeholder="Enter company name">
-                    </div>
-                    <div class="form-group">
-                        <label style="color: #c0c4cc;">📅 Pay Date</label>
-                        <input type="text" id="manualDate" class="result-input" placeholder="DD-MM-YYYY">
-                    </div>
-                    <div class="form-group">
-                        <label style="color: #c0c4cc;">💸 Total Deductions (₹)</label>
-                        <input type="number" id="manualDeductions" class="result-input" placeholder="Enter amount">
-                    </div>
-                    <div class="form-group">
-                        <label style="color: #c0c4cc;">✅ Net Pay (₹)</label>
-                        <input type="number" id="manualNetPay" class="result-input" placeholder="Enter amount">
-                    </div>
-                    <div style="display: flex; gap: 15px; margin-top: 20px;">
-                        <button id="saveMainManualBtn" class="primary-btn" style="flex: 1;">✓ Save Entry</button>
-                        <button id="cancelMainManualBtn" class="secondary-btn" style="flex: 1;">✕ Cancel</button>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('saveMainManualBtn')?.addEventListener('click', saveManualEntry);
-            document.getElementById('cancelMainManualBtn')?.addEventListener('click', cancelManualEntry);
-        });
-        
-        function saveManualEntry() {
-            const manualData = {
-                name: document.getElementById('manualName')?.value,
-                income: document.getElementById('manualIncome')?.value,
-                employer: document.getElementById('manualEmployer')?.value,
-                date: document.getElementById('manualDate')?.value,
-                deductions: document.getElementById('manualDeductions')?.value,
-                net_pay: document.getElementById('manualNetPay')?.value
-            };
-            
-            if (!manualData.name || !manualData.income || !manualData.employer) {
-                alert('❌ Please fill in all required fields (Name, Income, Employer)');
-                return;
-            }
-            
-            fetch('/api/save-monthly-data', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(manualData)
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.success) {
-                    alert('✅ Data saved successfully!');
-                    location.reload();
+                if (dashboardSection.style.display === 'none' || dashboardSection.style.display === '') {
+                    // Show dashboard
+                    dashboardSection.style.display = 'block';
+                    viewButton.innerHTML = '📊 Hide Financial Dashboard ←<span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to hide ✨</span>';
+                    dashboardSection.scrollIntoView({ behavior: 'smooth' });
                 } else {
-                    alert('❌ Error saving data: ' + (result.error || 'Unknown error'));
+                    // Hide dashboard
+                    dashboardSection.style.display = 'none';
+                    viewButton.innerHTML = '📊 View Your Financial Dashboard →<span style="display: block; font-size: 12px; opacity: 0.7; margin-top: 5px;">✨ Click to view ✨</span>';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('❌ Network error. Please try again.');
+            }
+
+            // Hide dashboard when page loads
+            document.addEventListener('DOMContentLoaded', function() {
+                const dashboardSection = document.getElementById('dashboard-section');
+                dashboardSection.style.display = 'none';
             });
-        }
-        
-        function cancelManualEntry() {
-            document.querySelector('#resultsContainer').innerHTML = `
-                <div class="results-placeholder">
-                    <span style="font-size: 24px; display: block; margin-bottom: 10px;">📄</span>
-                    <p>No data yet. Upload a payslip to see results.</p>
-                </div>
-            `;
-        }
-    </script>
+
+            // Manual entry button for main page
+            document.getElementById('manualEntryMainBtn')?.addEventListener('click', function() {
+                const resultsSection = document.querySelector('.section:nth-child(3)');
+                if (!resultsSection) return;
+                
+                resultsSection.querySelector('#resultsContainer').innerHTML = `
+                    <div class="manual-form">
+                        <h3 style="color: white; margin-bottom: 20px;">✎ Enter Your Salary Details</h3>
+                        <div class="form-group">
+                            <label style="color: #c0c4cc;">👤 Employee Name</label>
+                            <input type="text" id="manualName" class="result-input" placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #c0c4cc;">💰 Monthly Income (₹)</label>
+                            <input type="number" id="manualIncome" class="result-input" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #c0c4cc;">🏢 Employer</label>
+                            <input type="text" id="manualEmployer" class="result-input" placeholder="Enter company name">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #c0c4cc;">📅 Pay Date</label>
+                            <input type="text" id="manualDate" class="result-input" placeholder="DD-MM-YYYY">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #c0c4cc;">💸 Total Deductions (₹)</label>
+                            <input type="number" id="manualDeductions" class="result-input" placeholder="Enter amount">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #c0c4cc;">✅ Net Pay (₹)</label>
+                            <input type="number" id="manualNetPay" class="result-input" placeholder="Enter amount">
+                        </div>
+                        <div style="display: flex; gap: 15px; margin-top: 20px;">
+                            <button id="saveMainManualBtn" class="primary-btn" style="flex: 1;">✓ Save Entry</button>
+                            <button id="cancelMainManualBtn" class="secondary-btn" style="flex: 1;">✕ Cancel</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('saveMainManualBtn')?.addEventListener('click', saveManualEntry);
+                document.getElementById('cancelMainManualBtn')?.addEventListener('click', cancelManualEntry);
+            });
+            
+            function saveManualEntry() {
+                const manualData = {
+                    name: document.getElementById('manualName')?.value,
+                    income: document.getElementById('manualIncome')?.value,
+                    employer: document.getElementById('manualEmployer')?.value,
+                    date: document.getElementById('manualDate')?.value,
+                    deductions: document.getElementById('manualDeductions')?.value,
+                    net_pay: document.getElementById('manualNetPay')?.value
+                };
+                
+                if (!manualData.name || !manualData.income || !manualData.employer) {
+                    alert('❌ Please fill in all required fields (Name, Income, Employer)');
+                    return;
+                }
+                
+                fetch('/api/save-monthly-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(manualData)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('✅ Data saved successfully!');
+                        location.reload();
+                    } else {
+                        alert('❌ Error saving data: ' + (result.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('❌ Network error. Please try again.');
+                });
+            }
+            
+            function cancelManualEntry() {
+                document.querySelector('#resultsContainer').innerHTML = `
+                    <div class="results-placeholder">
+                        <span style="font-size: 24px; display: block; margin-bottom: 10px;">📄</span>
+                        <p>No data yet. Upload a payslip to see results.</p>
+                    </div>
+                `;
+            }
+        </script>
+    </div>
     
     <!-- Add Chart.js and dashboard files -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>

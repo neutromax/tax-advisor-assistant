@@ -408,6 +408,60 @@
             to { transform: rotate(360deg); }
         }
 
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: #1a1e24;
+            border: 2px solid #00ffc4;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,255,196,0.3);
+        }
+
+        .modal-content h2 {
+            color: #00ffc4;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .form-preview {
+            background: #0a0c10;
+            color: #c0c4cc;
+            padding: 25px;
+            border-radius: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            border: 1px solid rgba(0,255,196,0.2);
+            margin: 20px 0;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header {
@@ -425,6 +479,10 @@
             }
             
             .button-group {
+                flex-direction: column;
+            }
+            
+            .modal-buttons {
                 flex-direction: column;
             }
         }
@@ -448,16 +506,24 @@
         </div>
 
         <!-- Month Selector Card -->
-        <div class="card">
-            <h2 class="card-title">📅 Select Month to Analyze</h2>
-            <select id="monthSelect" onchange="loadMonthData(this.value)">
-                <option value="">Choose a month</option>
-            </select>
-            <div class="income-display" id="incomeDisplay" style="display: none;">
-                <div class="label">Monthly Income</div>
-                <div class="value" id="monthIncome">₹0</div>
-            </div>
-        </div>
+<div class="card">
+    <h2 class="card-title">📅 Select Month to Analyze</h2>
+    
+    <!-- Year Selector - Always visible -->
+    <select id="yearSelector" class="month-selector" onchange="onYearChange(this.value)" style="margin-bottom: 10px;">
+        <option value="">Select Financial Year</option>
+    </select>
+    
+    <!-- Month Selector - Appears after year selection -->
+    <select id="monthSelect" class="month-selector" onchange="loadMonthData(this.value)" style="display: none;">
+        <option value="">Choose a month</option>
+    </select>
+    
+    <div class="income-display" id="incomeDisplay" style="display: none;">
+        <div class="label">Monthly Income</div>
+        <div class="value" id="monthIncome">₹0</div>
+    </div>
+</div>
 
         <!-- Questionnaire Section -->
         <div id="questionnaireSection" class="card" style="display: none;">
@@ -498,10 +564,19 @@
         let currentMonth = null;
         let currentIncome = 0;
         let monthlyData = null;
+        let currentAnswers = null;
 
         // Load months on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadMonths();
+            
+            // Get user name from welcome message if available
+            const welcomeEl = document.querySelector('.welcome h1');
+            if (welcomeEl) {
+                window.userName = welcomeEl.textContent.replace('Welcome back,', '').replace('!', '').trim();
+            } else {
+                window.userName = 'User';
+            }
         });
 
         function loadMonths() {
@@ -571,13 +646,15 @@
         }
 
         function calculateRefund() {
-            const answers = {
+            currentAnswers = {
                 ppf: parseFloat(document.getElementById('ppf')?.value || 0),
                 elss: parseFloat(document.getElementById('elss')?.value || 0),
                 insurance: parseFloat(document.getElementById('insurance')?.value || 0),
                 rent_paid: parseFloat(document.getElementById('rent')?.value || 0),
                 home_loan: parseFloat(document.getElementById('homeLoan')?.value || 0)
             };
+            
+            console.log('Saving answers:', currentAnswers);
             
             // Show loading
             document.getElementById('resultsSection').style.display = 'block';
@@ -588,7 +665,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     month: currentMonth,
-                    answers: answers,
+                    answers: currentAnswers,
                     income: currentIncome
                 })
             })
@@ -596,7 +673,7 @@
             .then(data => {
                 if (data.success) {
                     displayResults({
-                        answers: answers,
+                        answers: currentAnswers,
                         results: data.results
                     });
                 } else {
@@ -610,6 +687,7 @@
         }
 
         function displayResults(data) {
+            currentAnswers = data.answers;
             const answers = data.answers || {};
             const results = data.results || {};
             
@@ -665,9 +743,278 @@
             document.getElementById('incomeDisplay').style.display = 'none';
         }
 
-        function downloadReport() {
-            alert('📄 Report download will be available in Phase 8!');
+        function extractNumberFromText(text) {
+            if (!text) return 0;
+            const num = parseFloat(text.replace(/[₹,]/g, ''));
+            return isNaN(num) ? 0 : num;
         }
+
+        function downloadReport() {
+            if (!currentAnswers) {
+                alert('Please calculate a refund first!');
+                return;
+            }
+            
+            // Get results from the displayed data
+            const results = {
+                hra: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(1) td:last-child')?.textContent || '0'),
+                section_80c: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(2) td:last-child')?.textContent || '0'),
+                section_80d: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(3) td:last-child')?.textContent || '0')
+            };
+            
+            results.total_refund = results.hra + results.section_80c + results.section_80d;
+            
+            showFormPreview(currentMonth, currentIncome, currentAnswers, results);
+        }
+
+        function showFormPreview(month, income, answers, results) {
+            const formatMoney = (num) => '₹' + (num || 0).toLocaleString('en-IN');
+            
+            const currentDate = new Date().toLocaleDateString('en-IN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+            
+            const formContent = `
+═══════════════════════════════════════════
+         TAX REFUND APPLICATION FORM
+═══════════════════════════════════════════
+
+Date: ${currentDate}
+
+1. APPLICANT DETAILS:
+──────────────────────────────────────────
+Name: ${window.userName}
+PAN: [To be filled by user]
+Aadhaar: [To be filled by user]
+
+2. INCOME DETAILS:
+──────────────────────────────────────────
+Month: ${month}
+Monthly Income: ${formatMoney(income)}
+
+3. INVESTMENTS & EXPENSES:
+──────────────────────────────────────────
+PPF Investment: ${formatMoney(answers.ppf)}
+ELSS Investment: ${formatMoney(answers.elss)}
+Health Insurance: ${formatMoney(answers.insurance)}
+Rent Paid: ${formatMoney(answers.rent_paid)}
+Home Loan Interest: ${formatMoney(answers.home_loan)}
+
+4. TAX REFUND CALCULATION:
+──────────────────────────────────────────
+HRA Refund: ${formatMoney(results.hra)}
+80C Tax Saved: ${formatMoney(results.section_80c)}
+80D Tax Saved: ${formatMoney(results.section_80d)}
+──────────────────────────────────────────
+TOTAL REFUND AMOUNT: ${formatMoney(results.total_refund)}
+──────────────────────────────────────────
+
+5. DECLARATION:
+──────────────────────────────────────────
+I hereby declare that the information provided 
+above is true and correct to the best of my knowledge.
+
+Place: _______________
+
+Date: ${currentDate}
+
+Signature: __________________
+
+═══════════════════════════════════════════
+This is a system-generated form for Panchayat/
+Income Tax Department submission.
+═══════════════════════════════════════════
+            `;
+            
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2>📄 Form Preview</h2>
+                    <div class="form-preview">${formContent}</div>
+                    <div class="modal-buttons">
+                        <button class="btn-primary" onclick="downloadForm(\`${formContent.replace(/`/g, '\\`')}\`, '${month}')">
+                            ⬇️ Download Form
+                        </button>
+                        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">
+                            ✕ Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        window.downloadForm = function(content, month) {
+            const filename = `Tax_Refund_Form_${month.replace(/ /g, '_')}.txt`;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            document.querySelector('.modal-overlay')?.remove();
+            
+            setTimeout(() => {
+                alert(`✅ Form downloaded as ${filename}\n\nYou can now print this and submit at your local Panchayat/Income Tax office.`);
+            }, 100);
+        };
+        // Add these variables at the top of your script
+let selectedYear = '';
+let selectedMonth = '';
+
+// Load years when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadMonths(); // Your existing function
+    loadAvailableYears(); // New function
+});
+
+// New function to load financial years
+async function loadAvailableYears() {
+    try {
+        const response = await fetch('/api/financial-years');
+        const data = await response.json();
+        
+        const yearSelect = document.getElementById('yearSelector');
+        yearSelect.innerHTML = '<option value="">Select Financial Year</option>';
+        
+        if (data.success && data.years && data.years.length > 0) {
+            const sortedYears = data.years.sort((a, b) => b.localeCompare(a));
+            sortedYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = `FY ${year}`;
+                yearSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading years:', error);
+    }
+}
+
+// New function for year change
+function onYearChange(year) {
+    selectedYear = year;
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelector');
+    
+    if (year) {
+        // Show month selector
+        monthSelect.style.display = 'block';
+        loadMonthsForYear(year);
+    } else {
+        // Hide month selector
+        monthSelect.style.display = 'none';
+        monthSelect.innerHTML = '<option value="">Choose a month</option>';
+    }
+}
+
+// New function to load months for selected year
+async function loadMonthsForYear(year) {
+    try {
+        const response = await fetch('/api/months-list');
+        const data = await response.json();
+        
+        const monthSelect = document.getElementById('monthSelect');
+        monthSelect.innerHTML = '<option value="">Choose a month</option>';
+        
+        if (data.success && data.months) {
+            // Filter months for selected financial year
+            const monthsForYear = data.months.filter(month => {
+                const parts = month.split(' ');
+                if (parts.length === 2) {
+                    const monthName = parts[0];
+                    const monthYear = parseInt(parts[1]);
+                    
+                    const months = {
+                        'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                        'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                        'September': 9, 'October': 10, 'November': 11, 'December': 12
+                    };
+                    const monthNum = months[monthName];
+                    
+                    let monthFY;
+                    if (monthNum >= 4) {
+                        monthFY = `${monthYear}-${(monthYear + 1).toString().slice(-2)}`;
+                    } else {
+                        monthFY = `${monthYear - 1}-${monthYear.toString().slice(-2)}`;
+                    }
+                    
+                    return monthFY === year;
+                }
+                return false;
+            });
+            
+            // Sort months
+            monthsForYear.sort((a, b) => {
+                const [monthA, yearA] = a.split(' ');
+                const [monthB, yearB] = b.split(' ');
+                if (yearA !== yearB) return parseInt(yearB) - parseInt(yearA);
+                const months = {
+                    'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                    'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                    'September': 9, 'October': 10, 'November': 11, 'December': 12
+                };
+                return months[monthB] - months[monthA];
+            });
+            
+            monthsForYear.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading months:', error);
+    }
+}
+
+// Update your existing loadMonthData function
+async function loadMonthData(month) {
+    if (!month) return;
+    currentMonth = month;
+    console.log('Loading month:', month);
+    
+    document.getElementById('incomeDisplay').style.display = 'none';
+    
+    try {
+        // First get monthly data
+        const monthRes = await fetch(`/api/monthly-data/${encodeURIComponent(month)}`);
+        const monthData = await monthRes.json();
+        
+        if (monthData.success) {
+            monthlyData = monthData.data;
+            document.getElementById('incomeDisplay').style.display = 'block';
+            document.getElementById('monthIncome').textContent = '₹' + (monthData.data.income || 0).toLocaleString('en-IN');
+            
+            // Then check for tax analysis
+            const taxRes = await fetch(`/api/month-tax/${encodeURIComponent(month)}`);
+            const taxData = await taxRes.json();
+            
+            if (taxData.success && taxData.has_data) {
+                displayResults(taxData.data);
+            } else {
+                // Make sure questionnaire is visible
+                document.getElementById('questionnaireSection').style.display = 'block';
+                document.getElementById('resultsSection').style.display = 'none';
+                document.getElementById('selectedMonth').textContent = currentMonth;
+                currentIncome = monthlyData?.income || 0;
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
     </script>
 </body>
 </html>

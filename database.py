@@ -114,6 +114,10 @@ class Database:
         if "financial_data" not in data["users"][email]:
             data["users"][email]["financial_data"] = {}
         
+        # Calculate financial year for this month
+        from app import calculate_financial_year
+        financial_year = calculate_financial_year(month_key)
+        
         # Store monthly record with all details
         data["users"][email]["financial_data"][month_key] = {
             "income": month_data.get("income", 0),
@@ -133,7 +137,8 @@ class Database:
                 "parents": month_data.get("insurance", {}).get("parents", 0)
             },
             "tax_paid": month_data.get("tax_paid", 0),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "financial_year": financial_year  # Store financial year
         }
         
         self._save(data)
@@ -176,9 +181,14 @@ class Database:
             "monthly_breakdown": []
         }
         
-        # If financial_year specified, filter months containing that year
+        # If financial_year specified, filter months by their financial year
         for month_key, data in monthly_data.items():
-            if financial_year and financial_year not in month_key:
+            month_fy = data.get('financial_year')
+            if not month_fy:
+                from app import calculate_financial_year
+                month_fy = calculate_financial_year(month_key)
+            
+            if financial_year and month_fy != financial_year:
                 continue
                 
             summary["total_income"] += data.get("income", 0)
@@ -194,7 +204,8 @@ class Database:
                 "month": month_key,
                 "income": data.get("income", 0),
                 "tax_paid": data.get("tax_paid", 0),
-                "deductions": data.get("deductions", 0)
+                "deductions": data.get("deductions", 0),
+                "financial_year": month_fy
             })
         
         return summary
@@ -223,6 +234,26 @@ class Database:
         """Get list of all months user has data for"""
         monthly_data = self.get_user_monthly_data(email)
         return sorted(monthly_data.keys())
+    
+    # ========== NEW METHOD FOR FINANCIAL YEARS ==========
+    def get_available_financial_years(self, email):
+        """Get list of all financial years user has data for"""
+        monthly_data = self.get_user_monthly_data(email)
+        years = set()
+        
+        for month_key, data in monthly_data.items():
+            # Try to get from stored data first
+            fy = data.get('financial_year')
+            if fy:
+                years.add(fy)
+            else:
+                # Calculate if not stored
+                from app import calculate_financial_year
+                fy = calculate_financial_year(month_key)
+                if fy:
+                    years.add(fy)
+        
+        return sorted(list(years), reverse=True)
 
 # Create global database instance
 db = Database()

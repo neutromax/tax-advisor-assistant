@@ -11,6 +11,7 @@ from database import db
 from authlib.integrations.flask_client import OAuth
 from authlib.common.security import generate_token
 from PIL import Image
+import secrets
 
 load_dotenv()
 
@@ -24,7 +25,8 @@ OCR_SPACE_API_KEY = os.getenv('OCR_SPACE_API_KEY')
 app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
-    PERMANENT_SESSION_LIFETIME=3600
+    PERMANENT_SESSION_LIFETIME=3600,
+    SESSION_COOKIE_SECURE=False
 )
 
 # Initialize OAuth
@@ -45,6 +47,34 @@ google = oauth.register(
 login_attempts = {}
 
 # ========== HELPER FUNCTIONS ==========
+def calculate_financial_year(month_key):
+    """Convert month name to financial year (e.g., 'April 2025' -> '2025-26')"""
+    try:
+        if not month_key:
+            return None
+            
+        parts = month_key.split()
+        if len(parts) == 2:
+            month = parts[0]
+            year = int(parts[1])
+            
+            months = {
+                'January': 1, 'February': 2, 'March': 3, 'April': 4,
+                'May': 5, 'June': 6, 'July': 7, 'August': 8,
+                'September': 9, 'October': 10, 'November': 11, 'December': 12
+            }
+            
+            month_num = months.get(month, 0)
+            
+            if month_num >= 4:
+                return f"{year}-{str(year+1)[-2:]}"
+            else:
+                return f"{year-1}-{str(year)[-2:]}"
+    except Exception as e:
+        print(f"Error calculating financial year for {month_key}: {e}")
+    
+    return None
+
 def safe_float(value):
     """Safely convert any value to float"""
     try:
@@ -53,7 +83,6 @@ def safe_float(value):
         if isinstance(value, (int, float)):
             return float(value)
         if isinstance(value, str):
-            # Remove commas and convert
             value = value.replace(',', '').strip()
             return float(value) if value else 0.0
         return 0.0
@@ -77,7 +106,7 @@ def index():
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
 
-# ========== PHASE 5 - FINANCIAL DASHBOARD API ==========
+# ========== PHASE 5 - FINANCIAL DASHBOARD API WITH YEAR SELECTION ==========
 @app.route('/api/financial-summary')
 def financial_summary():
     if 'user_email' not in session:
@@ -86,12 +115,14 @@ def financial_summary():
     try:
         user_email = session['user_email']
         
-        # Get real user data from database
-        monthly_data = db.get_user_monthly_data(user_email)
-        yearly_summary = db.get_user_yearly_summary(user_email)
+        # Get year from query parameter (e.g., ?year=2025-26)
+        selected_year = request.args.get('year', None)
+        print(f"📅 Selected financial year: {selected_year}")
         
-        if not monthly_data:
-            # Return empty data if no records exist
+        # Get ALL monthly data first
+        all_monthly_data = db.get_user_monthly_data(user_email)
+        
+        if not all_monthly_data:
             return jsonify({
                 "success": True,
                 "summary": {
@@ -115,53 +146,118 @@ def financial_summary():
                 }
             })
         
-        # Prepare monthly data for charts
+        print(f"📊 Total months found: {len(all_monthly_data)}")
+        
+        # Filter months by selected financial year if provided
+        filtered_data = {}
         months_list = []
+        
+        for month_key, data in all_monthly_data.items():
+            financial_year = data.get('financial_year', None)
+            
+            if not financial_year:
+                financial_year = calculate_financial_year(month_key)
+            
+            print(f"📅 Month: {month_key} -> Financial Year: {financial_year}")
+            
+            if selected_year:
+                if financial_year == selected_year:
+                    filtered_data[month_key] = data
+                    months_list.append(month_key)
+                    print(f"✅ Including {month_key} in {selected_year}")
+            else:
+                filtered_data[month_key] = data
+                months_list.append(month_key)
+        
+        monthly_data = filtered_data
+        
+        print(f"📊 After filtering - Months to process: {months_list}")
+        
+        # Initialize variables for calculations
         incomes_list = []
         total_take_home = 0
         total_tds = 0
         total_pf = 0
         total_other = 0
-        total_80c = 0
-        total_80d = 0
+        total_80c_investment = 0  # Actual PPF + ELSS invested
+        total_80d_investment = 0  # Actual Insurance premium paid
+        total_tax_saved = 0       # Total refund from tax_analysis
+        total_hra_benefit = 0     # HRA refund amount
         
+        # Process each month's data
         for month_key, data in monthly_data.items():
-            months_list.append(month_key)
+            print(f"\n🔍 Processing month: {month_key}")
             
-            # SAFELY convert to float using safe_float
             income = safe_float(data.get('income', 0))
             net_pay = safe_float(data.get('net_pay', 0))
             tax_paid = safe_float(data.get('tax_paid', 0))
             deductions = safe_float(data.get('deductions', 0))
             
+            print(f"   Income: ₹{income}, Net Pay: ₹{net_pay}, Tax Paid: ₹{tax_paid}, Deductions: ₹{deductions}")
+            
             incomes_list.append(income)
             total_take_home += net_pay
             total_tds += tax_paid
             
-            # Safely calculate PF and other deductions
             if deductions > 0:
-                total_pf += deductions * 0.6  # Approx PF portion
-                total_other += deductions * 0.4  # Other deductions
+                total_pf += deductions * 0.6
+                total_other += deductions * 0.4
             
-            # Investment tracking
-            investments = data.get('investments', {})
-            total_80c += (
-                safe_float(investments.get('ppf', 0)) + 
-                safe_float(investments.get('elss', 0)) + 
-                safe_float(investments.get('life_insurance', 0))
-            )
+            # ===== FIXED: Get investment data from tax_analysis.answers =====
+            if 'tax_analysis' in data and 'answers' in data['tax_analysis']:
+                answers = data['tax_analysis']['answers']
+                
+                # Get actual investment amounts from user inputs
+                ppf_val = safe_float(answers.get('ppf', 0))
+                elss_val = safe_float(answers.get('elss', 0))
+                insurance_val = safe_float(answers.get('insurance', 0))
+                
+                # Calculate 80C investment (PPF + ELSS)
+                month_80c = ppf_val + elss_val
+                total_80c_investment += month_80c
+                
+                # Calculate 80D investment (Insurance)
+                month_80d = insurance_val
+                total_80d_investment += month_80d
+                
+                # Get refund amounts from results
+                if 'results' in data['tax_analysis']:
+                    month_hra = safe_float(data['tax_analysis']['results'].get('hra', 0))
+                    total_hra_benefit += month_hra
+                    
+                    month_refund = safe_float(data['tax_analysis']['results'].get('total_refund', 0))
+                    total_tax_saved += month_refund
+                
+                print(f"   💰 From Tax Analyzer - 80C: ₹{month_80c}, 80D: ₹{month_80d}, HRA: ₹{month_hra if 'month_hra' in locals() else 0}")
             
-            insurance = data.get('insurance', {})
-            total_80d += (
-                safe_float(insurance.get('self', 0)) + 
-                safe_float(insurance.get('parents', 0))
-            )
+            # Fallback to old investments structure if no tax_analysis
+            else:
+                investments = data.get('investments', {})
+                ppf_val = safe_float(investments.get('ppf', 0))
+                elss_val = safe_float(investments.get('elss', 0))
+                life_val = safe_float(investments.get('life_insurance', 0))
+                month_80c = ppf_val + elss_val + life_val
+                total_80c_investment += month_80c
+                
+                insurance = data.get('insurance', {})
+                self_val = safe_float(insurance.get('self', 0))
+                parents_val = safe_float(insurance.get('parents', 0))
+                month_80d = self_val + parents_val
+                total_80d_investment += month_80d
+                
+                print(f"   💰 From old structure - 80C: ₹{month_80c}, 80D: ₹{month_80d}")
         
+        # If no tax_analysis data found, estimate tax saved
+        if total_tax_saved == 0:
+            total_tax_saved = (total_80c_investment * 0.3) + (total_80d_investment * 0.3) + total_hra_benefit
+            print(f"⚠️ Estimated tax saved: ₹{total_tax_saved}")
+        
+        # Calculate summary
         summary = {
-            "totalIncome": safe_float(yearly_summary.get('total_income', 0)),
+            "totalIncome": sum(incomes_list),
             "totalTax": total_tds,
-            "taxSaved": total_80c + total_80d,
-            "monthsTracked": yearly_summary.get('months_tracked', 0),
+            "taxSaved": total_tax_saved,
+            "monthsTracked": len(months_list),
             "trend": calculate_trend(incomes_list) if len(incomes_list) > 1 else 0
         }
         
@@ -174,16 +270,29 @@ def financial_summary():
             "otherDeductions": total_other
         }
         
+                # Calculate REFUND amounts (30% of investments) - matching calculate_tax_refund function
+        refund_80c = total_80c_investment * 0.3
+        refund_80d = total_80d_investment * 0.3
+        
         savings = {
-            "invested80C": total_80c,
-            "invested80D": total_80d
+            "invested80C": total_80c_investment,  # Investment amount (for display)
+            "invested80D": total_80d_investment,  # Investment amount (for display)
+            "refund80C": refund_80c,               # Refund amount (for progress bar)
+            "refund80D": refund_80d      
         }
+        
+        print(f"\n🎯 FINAL RESULTS for {selected_year if selected_year else 'All Years'}:")
+        print(f"   Total Income: ₹{summary['totalIncome']}")
+        print(f"   Tax Saved: ₹{total_tax_saved}")
+        print(f"   Refund 80C: ₹{refund_80c} (from investment ₹{total_80c_investment})")
+        print(f"   Refund 80D: ₹{refund_80d} (from investment ₹{total_80d_investment})")
+        print(f"   Months: {months_list}")
         
         return jsonify({
             "success": True,
             "summary": summary,
             "monthlyData": monthly_data_response,
-            "savings": savings
+            "savings": savings  # Now sends REFUND amounts!
         })
         
     except Exception as e:
@@ -202,14 +311,12 @@ def save_monthly_data():
         data = request.json
         user_email = session['user_email']
         
-        # Extract month from date
         date_str = data.get('date', '')
         month_key = extract_month_from_date(date_str)
         
         if not month_key:
             return jsonify({"success": False, "error": "Could not determine month"}), 400
         
-        # Prepare monthly record - CONVERT TO FLOAT SAFELY
         deductions_val = safe_float(data.get('deductions', 0))
         
         month_data = {
@@ -222,12 +329,11 @@ def save_monthly_data():
             "hra": {},
             "investments": {},
             "insurance": {},
-            "tax_paid": deductions_val * 0.3  # Approx tax portion
+            "tax_paid": deductions_val * 0.3
         }
         
         print(f"💾 Saving month: {month_key} with data: {month_data}")
         
-        # Save to database
         success, message = db.save_monthly_record(user_email, month_data)
         
         if success:
@@ -247,14 +353,12 @@ def extract_month_from_date(date_str):
         if not date_str:
             return None
             
-        # Try to parse date formats
         months = {
             "01": "January", "02": "February", "03": "March", "04": "April",
             "05": "May", "06": "June", "07": "July", "08": "August",
             "09": "September", "10": "October", "11": "November", "12": "December"
         }
         
-        # Check if it's already in "Month YYYY" format
         month_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_str)
         if month_match:
             month_name = month_match.group(1)
@@ -262,10 +366,8 @@ def extract_month_from_date(date_str):
             print(f"✅ Extracted month from text: {month_name} {year}")
             return f"{month_name} {year}"
         
-        # Check for DD/MM/YYYY format
         date_match = re.search(r'(\d{2})[/-](\d{2})[/-](\d{4})', date_str)
         if date_match:
-            day = date_match.group(1)
             month_num = date_match.group(2)
             year = date_match.group(3)
             if month_num in months:
@@ -279,7 +381,7 @@ def extract_month_from_date(date_str):
         print(f"❌ Month extraction error: {str(e)}")
         return None
 
-# ========== GET MONTHLY DATA FOR CHATBOT ==========
+# ========== GET MONTHLY DATA ==========
 @app.route('/api/monthly-data/<month>')
 def get_monthly_data(month):
     if 'user_email' not in session:
@@ -312,6 +414,52 @@ def get_months_list():
         print(f"❌ Error: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+# ========== GET MONTHS LIST WITH FINANCIAL YEARS ==========
+@app.route('/api/months-with-years')
+def get_months_with_years():
+    """Get months grouped by financial year"""
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        user_email = session['user_email']
+        monthly_data = db.get_user_monthly_data(user_email)
+        
+        result = {}
+        
+        for month_key in monthly_data.keys():
+            financial_year = calculate_financial_year(month_key)
+            if financial_year:
+                if financial_year not in result:
+                    result[financial_year] = []
+                result[financial_year].append(month_key)
+        
+        for year in result:
+            result[year].sort(key=lambda x: datetime.strptime(x, "%B %Y"))
+        
+        return jsonify({
+            "success": True,
+            "data": result
+        })
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# ========== GET AVAILABLE FINANCIAL YEARS ==========
+@app.route('/api/financial-years')
+def get_financial_years():
+    if 'user_email' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        user_email = session['user_email']
+        years = db.get_available_financial_years(user_email)
+        return jsonify({"success": True, "years": years})
+    except Exception as e:
+        print(f"❌ Error: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # ========== OCR.SPACE PAYSLIP ANALYSIS ==========
 @app.route('/analyze-payslip', methods=['POST'])
 def analyze_payslip():
@@ -328,13 +476,11 @@ def analyze_payslip():
         if not image_data:
             return jsonify({"error": "No image provided"}), 400
         
-        # Decode base64 image
         if ',' in image_data:
             image_data = image_data.split(',')[1]
         
         image_bytes = base64.b64decode(image_data)
         
-        # Call OCR.space API
         response = requests.post(
             'https://api.ocr.space/parse/image',
             data={
@@ -354,7 +500,6 @@ def analyze_payslip():
             error_msg = ocr_result.get('ErrorMessage', ['Unknown error'])[0]
             return jsonify({"success": False, "error": f"OCR failed: {error_msg}"}), 500
         
-        # Extract text from OCR result
         extracted_text = ""
         if 'ParsedResults' in ocr_result:
             for page in ocr_result['ParsedResults']:
@@ -362,7 +507,6 @@ def analyze_payslip():
         
         print(f"📝 Extracted text length: {len(extracted_text)} chars")
         
-        # Parse the extracted text to find relevant fields
         parsed_data = parse_payslip_text(extracted_text)
         
         return jsonify({
@@ -379,7 +523,6 @@ def parse_payslip_text(text):
     
     print("🔍 Parsing payslip text...")
     
-    # Initialize with null values
     result = {
         "name": None,
         "income": None,
@@ -389,15 +532,12 @@ def parse_payslip_text(text):
         "net_pay": None
     }
     
-    # Clean up text - remove extra spaces and newlines for better matching
     text = re.sub(r'\s+', ' ', text)
     
-    # Extract Employer
     employer_match = re.search(r'(Computer\s*Solutions\s*Pvt\.?\s*Ltd\.?)', text, re.IGNORECASE)
     if employer_match:
         result["employer"] = employer_match.group(1).strip()
     
-    # Extract Employee Name
     name_match = re.search(r'Name\s*:?\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]?\.?)?)', text, re.IGNORECASE)
     if name_match:
         result["name"] = name_match.group(1).strip()
@@ -406,7 +546,6 @@ def parse_payslip_text(text):
         if name_match:
             result["name"] = name_match.group(1).strip()
     
-    # Extract Date
     date_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', text, re.IGNORECASE)
     if date_match:
         result["date"] = f"{date_match.group(1)} {date_match.group(2)}"
@@ -415,7 +554,6 @@ def parse_payslip_text(text):
         if date_match:
             result["date"] = date_match.group(1)
     
-    # Extract Total Earnings (Income)
     income_match = re.search(r'Total\s*Earnings[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
     if income_match:
         result["income"] = float(income_match.group(1).replace(',', ''))
@@ -425,17 +563,14 @@ def parse_payslip_text(text):
             total = sum(float(e.replace(',', '')) for e in earnings)
             result["income"] = total
     
-    # Extract Deductions
     deductions_match = re.search(r'Total\s*Deductions[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
     if deductions_match:
         result["deductions"] = float(deductions_match.group(1).replace(',', ''))
     
-    # Extract Net Pay
     net_pay_match = re.search(r'Net\s*Pay[^\d]*([\d,]+\.?\d*)', text, re.IGNORECASE)
     if net_pay_match:
         result["net_pay"] = float(net_pay_match.group(1).replace(',', ''))
     
-    # Clean up any unreasonable values
     for field in ["income", "deductions", "net_pay"]:
         if result[field] and result[field] > 1000000:
             result[field] = None
@@ -446,12 +581,14 @@ def parse_payslip_text(text):
 # ========== GOOGLE LOGIN ROUTES ==========
 @app.route('/google-login')
 def google_login():
-    state = generate_token()
-    session['google_state'] = state
+    state = secrets.token_urlsafe(16)
+    session['oauth_state'] = state
+    print(f"🔐 Generated state: {state}")
     
-    
-    # Replace with your actual Codespaces URL
+    # HARDCODE your Codespaces URL here
     redirect_uri = "https://animated-telegram-5gxjrg9w5qx72v6wq-5000.app.github.dev/google/auth"
+    
+    print(f"🔄 Redirect URI: {redirect_uri}")
     
     return google.authorize_redirect(redirect_uri, state=state)
 
@@ -460,32 +597,36 @@ def google_auth():
     try:
         print("=== Google Auth Callback Started ===")
         
-        expected_state = session.get('google_state')
+        saved_state = session.get('oauth_state')
         received_state = request.args.get('state')
         
-        if expected_state and expected_state != received_state:
-            return render_template('login.html', error="Security verification failed")
+        print(f"📌 Saved state: {saved_state}")
+        print(f"📌 Received state: {received_state}")
+        
+        if not saved_state or saved_state != received_state:
+            print("❌ State mismatch")
+            return render_template('login.html', error="Security verification failed. Please try again.")
         
         token = google.authorize_access_token()
+        print("✅ Token received")
+        
         user_info = google.userinfo()
         
         if not user_info:
             user_info = token.get('userinfo', {})
-            if not user_info:
-                import jwt
-                id_token = token.get('id_token')
-                if id_token:
-                    user_info = jwt.decode(id_token, options={"verify_signature": False})
         
         email = user_info.get('email')
         if not email:
+            print("❌ No email received")
             return render_template('login.html', error="Could not get email from Google")
         
         name = user_info.get('name', email.split('@')[0])
+        print(f"👤 User: {name} ({email})")
         
         user = db.get_user(email)
         
         if not user:
+            print("🆕 Creating new user")
             success, message = db.create_user(
                 email=email,
                 password='GOOGLE_AUTH_USER',
@@ -498,8 +639,9 @@ def google_auth():
         session['user_name'] = name
         session.permanent = True
         
-        session.pop('google_state', None)
+        session.pop('oauth_state', None)
         
+        print("✅ Login successful")
         return redirect(url_for('dashboard'))
         
     except Exception as e:
@@ -588,6 +730,12 @@ def tax_bot():
     return render_template('tax-bot.html', 
                          user_name=session.get('user_name', 'User'))
 
+@app.route('/tax-analyzer')
+def tax_analyzer():
+    if 'user_email' not in session:
+        return redirect(url_for('login'))
+    return render_template('tax-analyzer.html')
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -603,17 +751,11 @@ def dev_login():
 # ========== UTILITY ROUTES ==========
 @app.route('/test-ocr')
 def test_ocr():
-    """Simple route to test OCR.space connection"""
     if not OCR_SPACE_API_KEY:
         return "❌ OCR.space API key not configured in .env"
     return "✅ OCR.space API key is configured!"
-@app.route('/tax-analyzer')
-def tax_analyzer():
-    if 'user_email' not in session:
-        return redirect(url_for('login'))
-    return render_template('tax-analyzer.html')
-# ========== PHASE 6 - TAX ANALYZER API ==========
 
+# ========== PHASE 6 - TAX ANALYZER API ==========
 @app.route('/api/month-tax/<month>')
 def get_month_tax(month):
     """Get saved tax calculation for a month"""
@@ -623,13 +765,11 @@ def get_month_tax(month):
     try:
         user_email = session['user_email']
         
-        # Get user's monthly data
         month_data = db.get_user_monthly_data(user_email, month)
         
         if not month_data:
             return jsonify({"success": False, "error": "Month not found"}), 404
         
-        # Check if tax calculation exists
         tax_data = month_data.get('tax_analysis', {})
         
         if tax_data and tax_data.get('status') == 'completed':
@@ -664,10 +804,8 @@ def calculate_tax():
         
         user_email = session['user_email']
         
-        # Calculate refunds
         results = calculate_tax_refund(income, answers)
         
-        # Save to database
         save_tax_calculation(user_email, month, answers, results)
         
         return jsonify({
@@ -689,24 +827,18 @@ def calculate_tax_refund(income, answers):
         "total_refund": 0
     }
     
-    # HRA Calculation (simplified)
     rent = answers.get('rent_paid', 0)
     if rent > 0:
-        # Approx 30% of rent can be refunded
         results['hra'] = round(rent * 0.3)
     
-    # 80C Calculation
-    total_80c = (answers.get('ppf', 0) + 
-                 answers.get('elss', 0))
+    total_80c = (answers.get('ppf', 0) + answers.get('elss', 0))
     if total_80c > 0:
         results['section_80c'] = round(total_80c * 0.3)
     
-    # 80D Calculation
     insurance = answers.get('insurance', 0)
     if insurance > 0:
         results['section_80d'] = round(insurance * 0.3)
     
-    # Total refund
     results['total_refund'] = (results['hra'] + 
                                results['section_80c'] + 
                                results['section_80d'])
@@ -727,7 +859,6 @@ def save_tax_calculation(user_email, month, answers, results):
     if month not in data["users"][user_email]["financial_data"]:
         data["users"][user_email]["financial_data"][month] = {}
     
-    # Add tax analysis
     data["users"][user_email]["financial_data"][month]["tax_analysis"] = {
         "status": "completed",
         "last_calculated": datetime.now().isoformat(),
@@ -737,8 +868,9 @@ def save_tax_calculation(user_email, month, answers, results):
     
     db._save(data)
 
+
 if __name__ == '__main__':
-    print("🚀 Tax Advisor - Phase 5 with Financial Dashboard")
+    print("🚀 Tax Advisor - Phase 5/6 with Year-Based Savings Tracking")
     print(f"OCR.space API Key: {'✅ Configured' if OCR_SPACE_API_KEY else '❌ Not configured'}")
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
