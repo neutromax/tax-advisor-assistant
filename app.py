@@ -359,28 +359,46 @@ def extract_month_from_date(date_str):
             "09": "September", "10": "October", "11": "November", "12": "December"
         }
         
-        month_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_str)
+        # Check if it's already in "Month YYYY" format
+        month_match = re.search(r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})', date_str, re.IGNORECASE)
         if month_match:
             month_name = month_match.group(1)
             year = month_match.group(2)
             print(f"✅ Extracted month from text: {month_name} {year}")
             return f"{month_name} {year}"
         
-        date_match = re.search(r'(\d{2})[/-](\d{2})[/-](\d{4})', date_str)
+        # Check for DD/MM/YYYY or DD-MM-YYYY (with optional leading zeros)
+        date_match = re.search(r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})', date_str)
         if date_match:
-            month_num = date_match.group(2)
+            day = date_match.group(1)
+            month_num = date_match.group(2).zfill(2)
             year = date_match.group(3)
+            
+            # Handle case where month and day might be swapped (US format)
+            if int(month_num) > 12:
+                month_num = day.zfill(2)
+                
             if month_num in months:
                 month_name = months[month_num]
                 print(f"✅ Extracted month from date: {month_name} {year}")
                 return f"{month_name} {year}"
         
-        print(f"❌ Could not extract month from: {date_str}")
+        # Check for YYYY-MM-DD format
+        date_match = re.search(r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})', date_str)
+        if date_match:
+            year = date_match.group(1)
+            month_num = date_match.group(2).zfill(2)
+            day = date_match.group(3)
+            if month_num in months:
+                month_name = months[month_num]
+                print(f"✅ Extracted month from ISO date: {month_name} {year}")
+                return f"{month_name} {year}"
+        
+        print(f"❌ Could not extract month from: '{date_str}'")
         return None
     except Exception as e:
         print(f"❌ Month extraction error: {str(e)}")
         return None
-
 # ========== GET MONTHLY DATA ==========
 @app.route('/api/monthly-data/<month>')
 def get_monthly_data(month):
