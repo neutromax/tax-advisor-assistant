@@ -567,17 +567,15 @@
         let currentAnswers = null;
 
         // Load months on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadMonths();
-            
-            // Get user name from welcome message if available
-            const welcomeEl = document.querySelector('.welcome h1');
-            if (welcomeEl) {
-                window.userName = welcomeEl.textContent.replace('Welcome back,', '').replace('!', '').trim();
-            } else {
-                window.userName = 'User';
-            }
-        });
+        // Load months on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadMonths();
+    loadAvailableYears();
+    
+    // Get user name from Flask template directly
+    window.userName = "{{ user_name }}";
+    console.log('User name set to:', window.userName);
+});
 
         function loadMonths() {
             fetch('/api/months-list')
@@ -687,51 +685,55 @@
         }
 
         function displayResults(data) {
-            currentAnswers = data.answers;
-            const answers = data.answers || {};
-            const results = data.results || {};
+    // Store the answers for download
+    currentAnswers = data.answers;  // ← THIS IS THE KEY LINE!
+    
+    const answers = data.answers || {};
+    const results = data.results || {};
+    
+    const formatMoney = (num) => '₹' + (num || 0).toLocaleString('en-IN');
+    
+    document.getElementById('questionnaireSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+    
+    document.getElementById('resultsSection').innerHTML = `
+        <h2 class="card-title">✅ Tax Analysis for ${currentMonth}</h2>
+        
+        <div class="results-grid">
+            <div class="results-card">
+                <h3>📝 Your Inputs (Monthly)</h3>
+                <table class="results-table">
+                    <tr><td>PPF Investment</td><td>${formatMoney(answers.ppf)}</td></tr>
+                    <tr><td>ELSS Investment</td><td>${formatMoney(answers.elss)}</td></tr>
+                    <tr><td>Health Insurance</td><td>${formatMoney(answers.insurance)}</td></tr>
+                    <tr><td>Rent Paid</td><td>${formatMoney(answers.rent_paid)}</td></tr>
+                    <tr><td>Home Loan Interest</td><td>${formatMoney(answers.home_loan)}</td></tr>
+                </table>
+                <p style="color: #8a8f99; font-size: 12px; margin-top: 10px;">* Annualized for tax calculation</p>
+            </div>
             
-            const formatMoney = (num) => '₹' + (num || 0).toLocaleString('en-IN');
-            
-            document.getElementById('questionnaireSection').style.display = 'none';
-            document.getElementById('resultsSection').style.display = 'block';
-            
-            document.getElementById('resultsSection').innerHTML = `
-                <h2 class="card-title">✅ Tax Analysis for ${currentMonth}</h2>
-                
-                <div class="results-grid">
-                    <div class="results-card">
-                        <h3>📝 Your Inputs</h3>
-                        <table class="results-table">
-                            <tr><td>PPF Investment</td><td>${formatMoney(answers.ppf)}</td></tr>
-                            <tr><td>ELSS Investment</td><td>${formatMoney(answers.elss)}</td></tr>
-                            <tr><td>Health Insurance</td><td>${formatMoney(answers.insurance)}</td></tr>
-                            <tr><td>Rent Paid</td><td>${formatMoney(answers.rent_paid)}</td></tr>
-                            <tr><td>Home Loan Interest</td><td>${formatMoney(answers.home_loan)}</td></tr>
-                        </table>
-                    </div>
-                    
-                    <div class="results-card">
-                        <h3>💰 Your Refund</h3>
-                        <table class="results-table">
-                            <tr><td>HRA Refund</td><td>${formatMoney(results.hra)}</td></tr>
-                            <tr><td>80C Tax Saved</td><td>${formatMoney(results.section_80c)}</td></tr>
-                            <tr><td>80D Tax Saved</td><td>${formatMoney(results.section_80d)}</td></tr>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="total-refund-card">
-                    <div class="total-refund-label">TOTAL POTENTIAL REFUND</div>
-                    <div class="total-refund-amount">${formatMoney(results.total_refund)}</div>
-                </div>
-                
-                <div class="button-group">
-                    <button class="btn-primary" onclick="editMode()">✎ Edit Inputs</button>
-                    <button class="btn-secondary" onclick="downloadReport()">📥 Download Report</button>
-                </div>
-            `;
-        }
+            <div class="results-card">
+                <h3>💰 Your Annual Tax Refund</h3>
+                <table class="results-table">
+                    <tr><td>HRA Refund</td><td>${formatMoney(results.hra)}</td></tr>
+                    <tr><td>80C Tax Saved</td><td>${formatMoney(results.section_80c)}</td></tr>
+                    <tr><td>80D Tax Saved</td><td>${formatMoney(results.section_80d)}</td></tr>
+                </table>
+                ${results.note ? `<p style="color: #00ffc4; font-size: 12px; margin-top: 10px;">📌 ${results.note}</p>` : ''}
+            </div>
+        </div>
+        
+        <div class="total-refund-card">
+            <div class="total-refund-label">TOTAL ANNUAL REFUND</div>
+            <div class="total-refund-amount">${formatMoney(results.total_refund)}</div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="editMode()">✎ Edit Inputs</button>
+            <button class="btn-secondary" onclick="downloadReport()">📥 Download Report</button>
+        </div>
+    `;
+}
 
         function editMode() {
             showQuestionnaire(currentIncome);
@@ -750,33 +752,39 @@
         }
 
         function downloadReport() {
-            if (!currentAnswers) {
-                alert('Please calculate a refund first!');
-                return;
-            }
-            
-            // Get results from the displayed data
-            const results = {
-                hra: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(1) td:last-child')?.textContent || '0'),
-                section_80c: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(2) td:last-child')?.textContent || '0'),
-                section_80d: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(3) td:last-child')?.textContent || '0')
-            };
-            
-            results.total_refund = results.hra + results.section_80c + results.section_80d;
-            
-            showFormPreview(currentMonth, currentIncome, currentAnswers, results);
-        }
+    if (!currentAnswers) {
+        alert('Please calculate a refund first!');
+        return;
+    }
+    
+    // Get results from the displayed data
+    const results = {
+        hra: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(1) td:last-child')?.textContent || '0'),
+        section_80c: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(2) td:last-child')?.textContent || '0'),
+        section_80d: extractNumberFromText(document.querySelector('.results-card:last-child tr:nth-child(3) td:last-child')?.textContent || '0')
+    };
+    
+    results.total_refund = results.hra + results.section_80c + results.section_80d;
+    
+    // Use stored income or get from display
+    const income = window.currentIncome || extractNumberFromText(document.getElementById('monthIncome')?.textContent || '0');
+    
+    showFormPreview(currentMonth, income, currentAnswers, results);
+}
 
         function showFormPreview(month, income, answers, results) {
-            const formatMoney = (num) => '₹' + (num || 0).toLocaleString('en-IN');
-            
-            const currentDate = new Date().toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-            
-            const formContent = `
+    const formatMoney = (num) => '₹' + (num || 0).toLocaleString('en-IN');
+    
+    const currentDate = new Date().toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    });
+    
+    // Get user name - try multiple sources
+    const userName = window.userName || 'User';
+    
+    const formContent = `
 ═══════════════════════════════════════════
          TAX REFUND APPLICATION FORM
 ═══════════════════════════════════════════
@@ -785,7 +793,7 @@ Date: ${currentDate}
 
 1. APPLICANT DETAILS:
 ──────────────────────────────────────────
-Name: ${window.userName}
+Name: ${userName}
 PAN: [To be filled by user]
 Aadhaar: [To be filled by user]
 
@@ -826,7 +834,7 @@ Signature: __________________
 This is a system-generated form for Panchayat/
 Income Tax Department submission.
 ═══════════════════════════════════════════
-            `;
+    `;
             
             // Create modal
             const modal = document.createElement('div');
@@ -874,8 +882,16 @@ let selectedMonth = '';
 
 // Load years when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    loadMonths(); // Your existing function
-    loadAvailableYears(); // New function
+    loadMonths();
+    loadAvailableYears();
+    
+    // Try to get user name from the page
+    const userName = "{{ user_name }}"; // This will be replaced by Flask
+    if (userName && userName !== 'User') {
+        window.userName = userName;
+    } else {
+        window.userName = 'User';
+    }
 });
 
 // New function to load financial years
@@ -994,8 +1010,13 @@ async function loadMonthData(month) {
         
         if (monthData.success) {
             monthlyData = monthData.data;
+            const income = monthData.data.income || 0;
+            
+            // Store income for form
+            window.currentIncome = income;
+            
             document.getElementById('incomeDisplay').style.display = 'block';
-            document.getElementById('monthIncome').textContent = '₹' + (monthData.data.income || 0).toLocaleString('en-IN');
+            document.getElementById('monthIncome').textContent = '₹' + income.toLocaleString('en-IN');
             
             // Then check for tax analysis
             const taxRes = await fetch(`/api/month-tax/${encodeURIComponent(month)}`);
@@ -1004,11 +1025,10 @@ async function loadMonthData(month) {
             if (taxData.success && taxData.has_data) {
                 displayResults(taxData.data);
             } else {
-                // Make sure questionnaire is visible
                 document.getElementById('questionnaireSection').style.display = 'block';
                 document.getElementById('resultsSection').style.display = 'none';
                 document.getElementById('selectedMonth').textContent = currentMonth;
-                currentIncome = monthlyData?.income || 0;
+                currentIncome = income;
             }
         }
     } catch (error) {

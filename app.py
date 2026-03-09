@@ -734,7 +734,8 @@ def tax_bot():
 def tax_analyzer():
     if 'user_email' not in session:
         return redirect(url_for('login'))
-    return render_template('tax-analyzer.html')
+    return render_template('tax-analyzer.html', 
+                         user_name=session.get('user_name', 'User'))
 
 @app.route('/logout')
 def logout():
