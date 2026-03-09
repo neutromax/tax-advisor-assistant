@@ -585,8 +585,9 @@ def google_login():
     session['oauth_state'] = state
     print(f"🔐 Generated state: {state}")
     
-    # HARDCODE your Codespaces URL here
-    redirect_uri = "https://animated-telegram-5gxjrg9w5qx72v6wq-5000.app.github.dev/google/auth"
+    # Get the base URL from the request (works everywhere)
+    base_url = request.url_root.rstrip('/')
+    redirect_uri = f"{base_url}/google/auth"
     
     print(f"🔄 Redirect URI: {redirect_uri}")
     
